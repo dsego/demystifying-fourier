@@ -61,7 +61,7 @@
   <!-- interactive demo -->
 </div>
 
-<input id="example-1-control" type="range" list="tickmarks" value=0 min=0 max=10 step=1>
+<input id="example-1-control" type="range" value=0 min=0 max=10 step=1>
 <span id="example-1-result"></span>
 
 <script>(() => {
@@ -101,7 +101,7 @@
     .attr('transform', `translate(0, 90)`)
     .attr('fill', 'none')
     .attr('stroke', '#E91E63')
-    .attr('stroke-width', 2)
+    .attr('stroke-width', 1.5)
 
 
   const transformPath = svg.insert('path', 'g')
@@ -132,7 +132,7 @@
 
     transformPath
       .attr('d', transformArea(range))
-      .attr('fill', result > 10 ? '#FFE0B2' : '#B0BEC5')
+      .attr('fill', Math.abs(result) > 10 ? '#FFE0B2' : '#B0BEC5')
   }
   d3.select(input).on('change', drawExample)
   drawExample()
@@ -159,7 +159,7 @@
     <option value="cosine">Cosine</option>
   </select>
 </p>
-<input id="example-2-freq"  type="range" list="tickmarks" value=0 min=0 max=10 step=1>
+<input id="example-2-freq"  type="range" value=0 min=0 max=10 step=1>
 <span id="example-2-result"></span>
 
 <script>(() => {
@@ -198,7 +198,7 @@
     .attr('transform', `translate(0, 90)`)
     .attr('fill', 'none')
     .attr('stroke', '#E91E63')
-    .attr('stroke-width', 2)
+    .attr('stroke-width', 1.5)
 
 
   const transformPath = svg.insert('path', 'g')
@@ -233,7 +233,7 @@
 
     transformPath
       .attr('d', transformArea(range))
-      .attr('fill', result > 10 ? '#FFE0B2' : '#B0BEC5')
+      .attr('fill', Math.abs(result) > 10 ? '#FFE0B2' : '#B0BEC5')
   }
 
   d3.selectAll([typeInput, freqInput]).on('change', drawExample)
@@ -254,7 +254,7 @@
   <!-- interactive demo -->
 </div>
 
-<input id="example-3-freq"  type="range" list="tickmarks" value=0 min=0 max=10 step=1>
+<input id="example-3-freq"  type="range" value=0 min=0 max=10 step=1>
 <span id="example-3-result"></span>
 
 <script>(() => {
@@ -276,7 +276,7 @@
 
   const range = d3.range(0, 1.01, 0.01)
 
-  const targetSignal = sinusoid(4, Math.PI/2)
+  const targetSignal = sinusoid(4, Math.PI)
   const targetLine = d3.line()
     .curve(d3.curveNatural)
     .x(x)
@@ -289,50 +289,77 @@
     .attr('stroke-width', 2)
     .attr('d', targetLine(range))
 
-  const probePath = svg.insert('path', 'g')
+  const sinePath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 90)`)
     .attr('fill', 'none')
     .attr('stroke', '#E91E63')
-    .attr('stroke-width', 2)
+    .attr('stroke-width', 1)
 
+  const cosinePath = svg.insert('path', 'g')
+    .attr('transform', `translate(0, 90)`)
+    .attr('fill', 'none')
+    .attr('stroke', '#E91E63')
+    .attr('stroke-width', 1)
 
-  const transformPath = svg.insert('path', 'g')
+  const sineTransformPath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 180)`)
 
-  const typeInput = document.getElementById('example-2-transform-type')
-  const freqInput = document.getElementById('example-2-freq')
-  const resultLabel = document.getElementById('example-2-result')
+  const cosineTransformPath = svg.insert('path', 'g')
+    .attr('transform', `translate(0, 250)`)
+
+  const freqInput = document.getElementById('example-3-freq')
+  const resultLabel = document.getElementById('example-3-result')
 
   const drawExample = () => {
     const frequency = Number(freqInput.value)
 
-    const probeSignal = typeInput.value === 'sine'
-      ? sinusoid(frequency)
-      : sinusoid(frequency, Math.PI/2)
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/2)
 
-    const line = d3.line()
+    const sineLine = d3.line()
       .curve(d3.curveNatural)
       .x(x)
-      .y((t) => y(probeSignal(t)))
-    probePath.attr('d', line(range))
+      .y((t) => y(sine(t)))
 
-    const transform = (t) => targetSignal(t) * probeSignal(t)
-    const transformArea = d3.area()
+    sinePath.attr('d', sineLine(range))
+
+    const cosineLine = d3.line()
+      .curve(d3.curveNatural)
+      .x(x)
+      .y((t) => y(cosine(t)))
+
+    cosinePath.attr('d', cosineLine(range))
+
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
+
+    const sineTransformArea = d3.area()
       .curve(d3.curveNatural)
       .x(x)
       .y0(y(0))
-      .y1((t) => y(transform(t)))
+      .y1((t) => y(sineTransform(t)))
 
-    const result = d3.fsum(range, (d) => transform(d))
+    const cosineTransformArea = d3.area()
+      .curve(d3.curveNatural)
+      .x(x)
+      .y0(y(0))
+      .y1((t) => y(cosineTransform(t)))
 
-    resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
+    const sineResult = d3.fsum(range, (d) => sineTransform(d))
+    const cosineResult = d3.fsum(range, (d) => cosineTransform(d))
 
-    transformPath
-      .attr('d', transformArea(range))
-      .attr('fill', result > 10 ? '#FFE0B2' : '#B0BEC5')
+    // resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
+
+    sineTransformPath
+      .attr('d', sineTransformArea(range))
+      .attr('fill', Math.abs(sineResult) > 10 ? '#FFE0B2' : '#B0BEC5')
+
+    cosineTransformPath
+      .attr('d', cosineTransformArea(range))
+      .attr('fill', Math.abs(cosineResult) > 10 ? '#FFE0B2' : '#B0BEC5')
   }
 
-  d3.selectAll([typeInput, freqInput]).on('change', drawExample)
+  d3.select(freqInput).on('change', drawExample)
   drawExample()
 })()</script>
 
