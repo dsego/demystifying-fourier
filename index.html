@@ -72,78 +72,28 @@
 </div>
 
 <input id="example-1-control" type="range" value=0 min=0 max=10 step=1>
+<br>
 <span id="example-1-result"></span>
 
 <script>(() => {
-
-  const width = 800
-  const height = 300
-
-  const svg = d3.create('svg')
-  document.querySelector('#example-1').appendChild(svg.node())
-
-  svg.attr('viewBox', [0, 0, width, height])
-
-  const x = d3.scaleLinear()
-    .domain([0, 1])
-    .range([0, width])
-
-  const y = d3.scaleLinear()
-    .domain([1, -1])
-    .range([0, 50])
-
-  const range = d3.range(0, 1.01, 0.01)
-  const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
-
   const targetSignal = sinusoid(4)
-  const targetLine = d3.line()
-    .curve(d3.curveNatural)
-    .x(x)
-    .y((t) => y(targetSignal(t)))
-
-  svg.insert('path', 'g')
-    .attr('transform', `translate(0, 30)`)
-    .attr('fill', 'none')
-    .attr('stroke', '#29B6F6')
-    .attr('stroke-width', 2)
-    .attr('d', targetLine(range))
-
-  const probePath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 90)`)
-    .attr('fill', 'none')
-    .attr('stroke', '#E91E63')
-    .attr('stroke-width', 1.5)
-
-
-  const transformPath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 180)`)
+  const plot = createPlot()
+  document.querySelector('#example-1').appendChild(plot.svg.node())
 
   const input = document.getElementById('example-1-control')
   const resultLabel = document.getElementById('example-1-result')
 
   const drawExample = () => {
     const frequency = Number(input.value)
-    const probeSignal = sinusoid(frequency)
-    const line = d3.line()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y((t) => y(probeSignal(t)))
-    probePath.attr('d', line(range))
-
-    const transform = (t) => targetSignal(t) * probeSignal(t)
-    const transformArea = d3.area()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y0(y(0))
-      .y1((t) => y(transform(t)))
-
-    const result = d3.fsum(range, (d) => transform(d))
-
+    const sine = sinusoid(frequency)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    plot.update({
+      targetSignal,
+      sine,
+      sineTransform,
+    })
+    const [result, _] = plot.result()
     resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
-
-    transformPath
-      .attr('d', transformArea(range))
-      .attr('fill', color(Math.abs(result)))
   }
   d3.select(input).on('change', drawExample)
   drawExample()
@@ -174,46 +124,10 @@
 <span id="example-2-result"></span>
 
 <script>(() => {
-  const width = 800
-  const height = 300
-
-  const svg = d3.create('svg')
-  document.querySelector('#example-2').appendChild(svg.node())
-
-  svg.attr('viewBox', [0, 0, width, height])
-
-  const x = d3.scaleLinear()
-    .domain([0, 1])
-    .range([0, width])
-
-  const y = d3.scaleLinear()
-    .domain([1, -1])
-    .range([0, 50])
-
-  const range = d3.range(0, 1.01, 0.01)
-
   const targetSignal = sinusoid(4, Math.PI/2)
-  const targetLine = d3.line()
-    .curve(d3.curveNatural)
-    .x(x)
-    .y((t) => y(targetSignal(t)))
+  const plot = createPlot()
 
-  svg.insert('path', 'g')
-    .attr('transform', `translate(0, 30)`)
-    .attr('fill', 'none')
-    .attr('stroke', '#29B6F6')
-    .attr('stroke-width', 2)
-    .attr('d', targetLine(range))
-
-  const probePath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 90)`)
-    .attr('fill', 'none')
-    .attr('stroke', '#E91E63')
-    .attr('stroke-width', 1.5)
-
-
-  const transformPath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 180)`)
+  document.querySelector('#example-2').appendChild(plot.svg.node())
 
   const typeInput = document.getElementById('example-2-transform-type')
   const freqInput = document.getElementById('example-2-freq')
@@ -221,30 +135,18 @@
 
   const drawExample = () => {
     const frequency = Number(freqInput.value)
-    const probeSignal = typeInput.value === 'sine'
+    const sine = typeInput.value === 'sine'
       ? sinusoid(frequency)
       : sinusoid(frequency, Math.PI/2)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
 
-    const line = d3.line()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y((t) => y(probeSignal(t)))
-    probePath.attr('d', line(range))
-
-    const transform = (t) => targetSignal(t) * probeSignal(t)
-    const transformArea = d3.area()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y0(y(0))
-      .y1((t) => y(transform(t)))
-
-    const result = d3.fsum(range, (d) => transform(d))
-
+    plot.update({
+      targetSignal,
+      sine,
+      sineTransform,
+    })
+    const [result, _] = plot.result()
     resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
-
-    transformPath
-      .attr('d', transformArea(range))
-      .attr('fill', Math.abs(result) > 10 ? '#FFE0B2' : '#B0BEC5')
   }
 
   d3.selectAll([typeInput, freqInput]).on('change', drawExample)
@@ -258,7 +160,11 @@
 
 <p> Let's try combining the sine & cosine transform in our analysis</p>
 
-- we are now dealing with two numbers
+- we are now dealing with two numbers... you can notice both match partially, from this we can construct a complete match
+
+- we don't need anymore sinusoids, since the next two sinusoids would just be the negatives of our sin/cos probes
+
+<br><code> sin(π) = -sin(0) &  cos(3π/4) = -cos(0)</code>
 
 
 <div id="example-3" style="width:800px; margin-left: -25px">
@@ -270,9 +176,8 @@
 <span id="example-3-result"></span>
 
 <script>(() => {
-  const targetSignal = sinusoid(4)
-  const range = d3.range(0, 1.01, 0.01)
-  const plot = examplePlot({range})
+  const targetSignal = sinusoid(4, Math.PI/4)
+  const plot = createPlot()
   const freqInput = document.getElementById('example-3-freq')
   const resultLabel = document.getElementById('example-3-result')
 
@@ -281,7 +186,7 @@
   const drawExample = () => {
     const frequency = Number(freqInput.value)
     const sine = sinusoid(frequency)
-    const cosine = sinusoid(frequency, Math.PI/4)
+    const cosine = sinusoid(frequency, Math.PI/2)
     const sineTransform = (t) => targetSignal(t) * sine(t)
     const cosineTransform = (t) => targetSignal(t) * cosine(t)
 

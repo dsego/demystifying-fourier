@@ -6,10 +6,9 @@ const combine = (...sinusoids) => (
   (time) => sinusoids.reduce((res, s) => res + s(time), 0)
 )
 
-const examplePlot = ({range}) => {
+const createPlot = () => {
   const width = 800
   const height = 300
-
   const svg = d3.create('svg')
   svg.attr('viewBox', [0, 0, width, height])
 
@@ -17,19 +16,19 @@ const examplePlot = ({range}) => {
     .attr('transform', `translate(0, 30)`)
     .attr('fill', 'none')
     .attr('stroke', '#29B6F6')
-    .attr('stroke-width', 2)
+    .attr('stroke-width', 3)
 
   const sinePath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 90)`)
     .attr('fill', 'none')
     .attr('stroke', '#E91E63')
-    .attr('stroke-width', 1)
+    .attr('stroke-width', 1.5)
 
   const cosinePath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 90)`)
     .attr('fill', 'none')
     .attr('stroke', '#E91E63')
-    .attr('stroke-width', 1)
+    .attr('stroke-width', 1.5)
 
   const sineTransformPath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 180)`)
@@ -37,6 +36,7 @@ const examplePlot = ({range}) => {
   const cosineTransformPath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 250)`)
 
+  const range = d3.range(0, 1.01, 0.01)
   const x = d3.scaleLinear().domain([0, 1]).range([0, width])
   const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
   const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
@@ -50,17 +50,21 @@ const examplePlot = ({range}) => {
     update: ({targetSignal, sine, cosine, sineTransform, cosineTransform}) => {
       result = [
         d3.fsum(range, (t) => sineTransform(t)),
-        d3.fsum(range, (t) => cosineTransform(t))
+        cosineTransform ? d3.fsum(range, (t) => cosineTransform(t)) : undefined,
       ]
       targetPath.attr('d', line(targetSignal)(range))
       sinePath.attr('d', line(sine)(range))
-      cosinePath.attr('d', line(cosine)(range))
+      if (cosine) {
+        cosinePath.attr('d', line(cosine)(range))
+      }
       sineTransformPath
         .attr('d', area(sineTransform)(range))
         .attr('fill', color(Math.abs(result[0])))
-      cosineTransformPath
-        .attr('d', area(cosineTransform)(range))
-        .attr('fill', color(Math.abs(result[1])))
+      if (cosineTransform) {
+        cosineTransformPath
+          .attr('d', area(cosineTransform)(range))
+          .attr('fill', color(Math.abs(result[1])))
+      }
     }
   }
 }
