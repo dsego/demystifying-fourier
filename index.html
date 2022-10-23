@@ -9,6 +9,16 @@
   <script src="./common.js"></script>
   <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
+  <style>
+    svg {
+      border-radius: 2px;
+      box-shadow: 0 1px 5px #CFD8DC;
+    }
+
+    input[type=range] {
+      width: 500px;
+    }
+  </style>
 </head>
 
 <body>
@@ -83,6 +93,7 @@
     .range([0, 50])
 
   const range = d3.range(0, 1.01, 0.01)
+  const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
 
   const targetSignal = sinusoid(4)
   const targetLine = d3.line()
@@ -132,7 +143,7 @@
 
     transformPath
       .attr('d', transformArea(range))
-      .attr('fill', Math.abs(result) > 10 ? '#FFE0B2' : '#B0BEC5')
+      .attr('fill', color(Math.abs(result)))
   }
   d3.select(input).on('change', drawExample)
   drawExample()
@@ -255,15 +266,68 @@
 </div>
 
 <input id="example-3-freq"  type="range" value=0 min=0 max=10 step=1>
+<br>
 <span id="example-3-result"></span>
+
+<script>(() => {
+  const targetSignal = sinusoid(4)
+  const range = d3.range(0, 1.01, 0.01)
+  const plot = examplePlot({range})
+  const freqInput = document.getElementById('example-3-freq')
+  const resultLabel = document.getElementById('example-3-result')
+
+  document.querySelector('#example-3').appendChild(plot.svg.node())
+
+  const drawExample = () => {
+    const frequency = Number(freqInput.value)
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/4)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
+
+    plot.update({
+      targetSignal,
+      sine,
+      cosine,
+      sineTransform,
+      cosineTransform,
+    })
+    const [sineResult, cosineResult] = plot.result()
+    resultLabel.innerText = `f=${frequency}Hz,  transform=(${sineResult.toFixed(2)}, ${cosineResult.toFixed(2)})`
+  }
+  d3.select(freqInput).on('change', drawExample)
+  drawExample()
+
+
+})()</script>
+
+
+<h2>Fourier analysis</h2>
+
+
+<pre>
+  Complex signal
+
+  - draw signal
+  - draw sin+cos probes (like example 3)
+  - draw frequency graph with bins
+  - dragging frequency slider highlights all probed frequencies up until that point
+
+
+</pre>
+
+
+
+<div id="example-4" style="width:800px; margin-left: -25px">
+  <!-- interactive demo -->
+</div>
+
 
 <script>(() => {
   const width = 800
   const height = 300
 
   const svg = d3.create('svg')
-  document.querySelector('#example-3').appendChild(svg.node())
-
   svg.attr('viewBox', [0, 0, width, height])
 
   const x = d3.scaleLinear()
@@ -274,165 +338,27 @@
     .domain([1, -1])
     .range([0, 50])
 
-  const range = d3.range(0, 1.01, 0.01)
+  document.querySelector('#example-4').appendChild(svg.node())
 
-  const targetSignal = sinusoid(4, Math.PI)
-  const targetLine = d3.line()
+  const components = [
+    sinusoid(2, 0),
+    sinusoid(4, 0, 0.8),
+    sinusoid(7, 0, 0.5)
+  ]
+
+  const waveform = combine(...components)
+
+  const waveformLine = d3.line()
     .curve(d3.curveNatural)
     .x(x)
-    .y((t) => y(targetSignal(t)))
+    .y((t) => y(waveform(t)))
 
-  svg.insert('path', 'g')
+  const waveformPath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 30)`)
     .attr('fill', 'none')
-    .attr('stroke', '#29B6F6')
-    .attr('stroke-width', 2)
-    .attr('d', targetLine(range))
-
-  const sinePath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 90)`)
-    .attr('fill', 'none')
-    .attr('stroke', '#E91E63')
-    .attr('stroke-width', 1)
-
-  const cosinePath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 90)`)
-    .attr('fill', 'none')
-    .attr('stroke', '#E91E63')
-    .attr('stroke-width', 1)
-
-  const sineTransformPath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 180)`)
-
-  const cosineTransformPath = svg.insert('path', 'g')
-    .attr('transform', `translate(0, 250)`)
-
-  const freqInput = document.getElementById('example-3-freq')
-  const resultLabel = document.getElementById('example-3-result')
-
-  const drawExample = () => {
-    const frequency = Number(freqInput.value)
-
-    const sine = sinusoid(frequency)
-    const cosine = sinusoid(frequency, Math.PI/2)
-
-    const sineLine = d3.line()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y((t) => y(sine(t)))
-
-    sinePath.attr('d', sineLine(range))
-
-    const cosineLine = d3.line()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y((t) => y(cosine(t)))
-
-    cosinePath.attr('d', cosineLine(range))
-
-    const sineTransform = (t) => targetSignal(t) * sine(t)
-    const cosineTransform = (t) => targetSignal(t) * cosine(t)
-
-    const sineTransformArea = d3.area()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y0(y(0))
-      .y1((t) => y(sineTransform(t)))
-
-    const cosineTransformArea = d3.area()
-      .curve(d3.curveNatural)
-      .x(x)
-      .y0(y(0))
-      .y1((t) => y(cosineTransform(t)))
-
-    const sineResult = d3.fsum(range, (d) => sineTransform(d))
-    const cosineResult = d3.fsum(range, (d) => cosineTransform(d))
-
-    // resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
-
-    sineTransformPath
-      .attr('d', sineTransformArea(range))
-      .attr('fill', Math.abs(sineResult) > 10 ? '#FFE0B2' : '#B0BEC5')
-
-    cosineTransformPath
-      .attr('d', cosineTransformArea(range))
-      .attr('fill', Math.abs(cosineResult) > 10 ? '#FFE0B2' : '#B0BEC5')
-  }
-
-  d3.select(freqInput).on('change', drawExample)
-  drawExample()
-})()</script>
-
-
-<hr>
-<br>
-<br>
-<br>
-
-
-
-
-
-what about frequency resolutions ????
-
-https://dsp.stackexchange.com/questions/31203/frequency-resolution-of-dft
-
-
-
-
-- trying to recreate signals by "probing" with simple sinusoids, to figure out which sinusoids fit the waveform.
-
-
-
-<div id="example-99" style="width:800px; margin-left: -25px">
-  <!-- interactive demo -->
-</div>
-
-first signal 2Hz
-<input type="range" data-example-99 value=0 min=0 max=10 /><br>
-
-second signal 4Hz
-<input type="range" data-example-99 value=0 min=0 max=10 /><br>
-
-thirds signal 7Hz (phase shifted)
-<input type="range" data-example-99 value=0 min=0 max=10 />
-
-<script>
-  // const width = 800
-  // const height = 300
-
-  // const svg = d3.create('svg')
-  // svg.attr('viewBox', [0, 0, width, height])
-
-  // const x = d3.scaleLinear()
-  //   .domain([0, 1])
-  //   .range([0, width])
-
-  // const y = d3.scaleLinear()
-  //   .domain([1, -1])
-  //   .range([0, 50])
-
-  // document.querySelector('#example-99').appendChild(svg.node())
-
-  // const components = [
-  //   sinusoid(2, 0),
-  //   sinusoid(4, 0, 0.8),
-  //   sinusoid(7, 0, 0.5)
-  // ]
-
-  // const waveform = combine(...components)
-
-  // const waveformLine = d3.line()
-  //   .curve(d3.curveNatural)
-  //   .x(x)
-  //   .y((t) => y(waveform(t)))
-
-  // const waveformPath = svg.insert('path', 'g')
-  //   .attr('transform', `translate(0, 30)`)
-  //   .attr('fill', 'none')
-  //   .attr('stroke', '#0288d1')
-  //   .attr("stroke-width", 2)
-  //   .attr('d', waveformLine(d3.range(0, 1.01, 0.01)))
+    .attr('stroke', '#0288d1')
+    .attr("stroke-width", 2)
+    .attr('d', waveformLine(d3.range(0, 1.01, 0.01)))
 
 
   // const drawComponent = (component, translateY) => {
@@ -481,62 +407,9 @@ thirds signal 7Hz (phase shifted)
   // controls.on('change', redraw)
   // redraw()
 
-</script>
+})()</script>
 
 
-
-
-
-  <pre>
-    1. probing with sinewave by changing freq (dragging ?), fixed phase
-    2. probing with sinewave by dragging on the chart left right / fixed frequency
-    3. probing with sine & sine + π/2 (cosine)
-    4. chart with sine, sine + π/2, sine+π, sine+3π/2  (sine, cosine, negative sine, negative cosine)
-    5. chart with sine/cosine & unit circle, draging sine/cosine moves the line on the circle
-  </pre>
-
-
-
-
-  <pre>
-  freq 0 - 3
-  samples  0 - 7
-
-  A &times; sin(2&pi;ft + &phi;)
-
-
-
-   1) Probing example
-
-    sine probe misses: phase  π / 2, 3/2, 5/2,  freq 3
-    cosine probe misses:  phase 0, π, 2π, 3π, freq 3
-    freq 3.4, phase 0 --> frequency bin spillover
-
-    selected frequency is highlighted
-      --> need a way to highlight select frequency bucket without bar
-      maybe an arrow pointing at the axis band + bouncy animation  ?
-    --> click area for each band? + dotted lines?
-
-
-    ---> sinc function in freq domain
-
-
-  </pre>
-
-  <p>moving the phase by 45&deg;
-  <p>probing with a sin & cos</p>
-  <p>example of DFT</p>
-
-  <div id="probing-example-2" style="width:950px; margin-left: -100px">
-
-  </div>
-
-
-  <fieldset>
-    <legend>Probe</legend>
-    Frequency
-    <input type="number" value="0" id="frequency-input" min="0" max="7" step="1">
-  </fieldset>
 
 
 
@@ -811,5 +684,21 @@ thirds signal 7Hz (phase shifted)
 
 
   </script>
+
+
+<hr>
+<br>
+<br>
+<br>
+
+
+
+what about DFT and frequency resolutions ???
+<br>
+
+https://dsp.stackexchange.com/questions/31203/frequency-resolution-of-dft
+
+
+
 </body>
 </html>
