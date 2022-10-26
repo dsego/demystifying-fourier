@@ -10,13 +10,20 @@
   <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
   <style>
-    svg {
-      border-radius: 2px;
-      box-shadow: 0 1px 5px #CFD8DC;
-    }
-
     input[type=range] {
       width: 500px;
+    }
+
+    .example-plot {
+/*      display: flex;*/
+      width:800px;
+      margin-left: -25px;
+    }
+
+    .example-plot svg {
+      display: block;
+      flex-grow: 1;
+      flex-shrink: 0;
     }
   </style>
 </head>
@@ -67,7 +74,7 @@
  <p>TODO: add labels on the left side of example:  target function, sine probe function (reflects changing freq) and transform function</p>
  <p>TODO: add another bar plot for frequency (vu meter) - for fourier this becomes a xy plot </p>
 
-<div id="example-1" style="width:800px; margin-left: -25px">
+<div id="example-1" class="example-plot">
   <!-- interactive demo -->
 </div>
 
@@ -77,8 +84,11 @@
 
 <script>(() => {
   const targetSignal = sinusoid(4)
-  const plot = createPlot()
+  const plot = createSignalPlot()
   document.querySelector('#example-1').appendChild(plot.svg.node())
+
+  const meter = createMeter()
+  document.querySelector('#example-1').appendChild(meter.svg.node())
 
   const input = document.getElementById('example-1-control')
   const resultLabel = document.getElementById('example-1-result')
@@ -93,6 +103,7 @@
       sineTransform,
     })
     const [result, _] = plot.result()
+    meter.update(result)
     resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
   }
   d3.select(input).on('change', drawExample)
@@ -110,7 +121,7 @@
     is it because of hann window??
 </p>
 
-<div id="example-2" style="width:800px; margin-left: -25px">
+<div id="example-2" class="example-plot">
   <!-- interactive demo -->
 </div>
 <p>
@@ -125,9 +136,12 @@
 
 <script>(() => {
   const targetSignal = sinusoid(4, Math.PI/2)
-  const plot = createPlot()
 
+  const plot = createSignalPlot()
   document.querySelector('#example-2').appendChild(plot.svg.node())
+
+  const meter = createMeter()
+  document.querySelector('#example-2').appendChild(meter.svg.node())
 
   const typeInput = document.getElementById('example-2-transform-type')
   const freqInput = document.getElementById('example-2-freq')
@@ -146,6 +160,7 @@
       sineTransform,
     })
     const [result, _] = plot.result()
+    meter.update(result)
     resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
   }
 
@@ -162,26 +177,30 @@
 
 - we are now dealing with two numbers... you can notice both match partially, from this we can construct a complete match
 
-- we don't need anymore sinusoids, since the next two sinusoids would just be the negatives of our sin/cos probes
+- we don't need anymore sinusoids, since the next two sinusoids (apart by π/2) would just be the negatives of our sin/cos probes
 
 <br><code> sin(π) = -sin(0) &  cos(3π/4) = -cos(0)</code>
 
 
-<div id="example-3" style="width:800px; margin-left: -25px">
-  <!-- interactive demo -->
+<div id="example-3" class="example-plot">
+  <div id="example-3-signal-plot"></div>
+  <div id="example-3-xy-plot-"></div>
 </div>
 
-<input id="example-3-freq"  type="range" value=0 min=0 max=10 step=1>
+<input id="example-3-freq"  type="range" value=0 min=0 max=10 step=0.1>
 <br>
 <span id="example-3-result"></span>
 
 <script>(() => {
   const targetSignal = sinusoid(4, Math.PI/4)
-  const plot = createPlot()
   const freqInput = document.getElementById('example-3-freq')
   const resultLabel = document.getElementById('example-3-result')
 
-  document.querySelector('#example-3').appendChild(plot.svg.node())
+  const plot = createSignalPlot()
+  document.querySelector('#example-3-signal-plot').appendChild(plot.svg.node())
+
+  const circle = createUnitCircle()
+  document.querySelector('#example-3-signal-plot').appendChild(circle.svg.node())
 
   const drawExample = () => {
     const frequency = Number(freqInput.value)
@@ -197,7 +216,10 @@
       sineTransform,
       cosineTransform,
     })
+
     const [sineResult, cosineResult] = plot.result()
+
+    circle.update(cosineResult, sineResult)
     resultLabel.innerText = `f=${frequency}Hz,  transform=(${sineResult.toFixed(2)}, ${cosineResult.toFixed(2)})`
   }
   d3.select(freqInput).on('change', drawExample)
@@ -223,7 +245,7 @@
 
 
 
-<div id="example-4" style="width:800px; margin-left: -25px">
+<div id="example-4" class="example-plot">
   <!-- interactive demo -->
 </div>
 

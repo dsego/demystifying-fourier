@@ -6,11 +6,16 @@ const combine = (...sinusoids) => (
   (time) => sinusoids.reduce((res, s) => res + s(time), 0)
 )
 
-const createPlot = () => {
+const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
+
+const createSignalPlot = () => {
   const width = 800
   const height = 300
   const svg = d3.create('svg')
-  svg.attr('viewBox', [0, 0, width, height])
+  svg
+    .attr('width', width)
+    .attr('height', height)
+    .attr('viewBox', [0, 0, width, height])
 
   const targetPath = svg.insert('path', 'g')
     .attr('transform', `translate(0, 30)`)
@@ -39,7 +44,6 @@ const createPlot = () => {
   const range = d3.range(0, 1.01, 0.01)
   const x = d3.scaleLinear().domain([0, 1]).range([0, width])
   const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
-  const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
   const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
   const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
   let result = [0, 0]
@@ -69,30 +73,114 @@ const createPlot = () => {
   }
 }
 
-// plane.body.append('ellipse')
-//   .classed('unit-circle', true)
-//   .attr('cx', plane.scale.x(0))
-//   .attr('cy', plane.scale.y(0))
-//   .attr('rx', plane.scale.x(1) - plane.scale.x(0))
-//   .attr('ry', plane.scale.y(0) - plane.scale.y(1))
 
-// plane.body.append('g')
-//   .classed('axis x-axis', true)
-//   .attr('transform', 'translate('+[0, plane.scale.y(0)]+')')
-//   .call(d3.axisBottom(plane.scale.x).tickSize(0).tickValues([-1,1]))
-//   .append('text').text('Re')
-//       .attr('x', plane.width)
-//       .attr('dy', -6)
+const createMeter = () => {
+  const width = 300
+  const height = 50
+  const svg = d3.create('svg')
+  svg
+    .attr('width', width)
+    .attr('height', height)
+    .attr('viewBox', [0, 0, width, height])
 
-// plane.body.append('g')
-//   .classed('axis y-axis', true)
-//   .attr('transform', 'translate('+[plane.scale.x(0), 0]+')')
-//   .call(d3.axisLeft(plane.scale.y).tickSize(0).tickValues([-1,1]))
-//   .append('text').text('Im')
-//       .attr('transform', 'rotate(-90)')
-//       .attr('y', 15)
+  const y = d3.scaleLinear().domain([0, 60]).range([height, 0])
 
-// plane.body.selectAll('.axis .tick')
-//   .filter(function (d) { return d === 0 })
-//   .remove()
+  svg.append('g').call(d3.axisLeft(y))
+
+  const bar = svg.append('rect')
+    .attr('x', 5)
+    .attr('width', 5)
+    .attr('fill', '')
+
+  return {
+    svg,
+    update: (value) => {
+      bar
+        .attr('y', d => y(value))
+        .attr('height', d => y(0) - y(value))
+        .attr('fill', color(Math.abs(value)))
+    }
+  }
+}
+
+
+
+const createUnitCircle = () => {
+  const width = 300
+  const height = 300
+  const svg = d3.create('svg')
+  svg
+    .attr('width', width)
+    .attr('height', height)
+    .attr('viewBox', [0, 0, width, height])
+
+  const x = d3.scaleLinear().domain([-70, 70]).range([0, width])
+  const y = d3.scaleLinear().domain([70, -70]).range([0, height])
+
+  svg.append('ellipse')
+    .attr('cx', x(0))
+    .attr('cy', y(0))
+    .attr('rx', x(50) - x(0))
+    .attr('ry', y(0) - y(50))
+    .attr('fill', 'none')
+    .attr('stroke', '#B0BEC5')
+
+  svg.append('g')
+    .attr('transform', 'translate('+[0, y(0)]+')')
+    .call(d3.axisBottom(x))
+    // .append('text')
+    //   .text('cos')
+    //   .attr('x', x(1))
+    //   .attr('dy', -6)
+
+  svg.append('g')
+    .attr('transform', 'translate('+[x(0), 0]+')')
+    .call(d3.axisLeft(y))
+    // .append('text')
+    //   .text('sin')
+    //   .attr('transform', 'rotate(-90)')
+    //   .attr('y', 15)
+
+  const cosBar = svg.append('line')
+    .attr('x1', x(0))
+    .attr('y1', y(0))
+    .attr('y2', y(0))
+    .attr('stroke-width', 3)
+    .attr('stroke', '#FFB74D')
+
+  const sinBar = svg.append('line')
+    .attr('stroke-width', 3)
+    .attr('stroke', '#FFB74D')
+    .attr('x1', x(0))
+    .attr('y1', y(0))
+    .attr('x2', x(0))
+
+  const distance = svg.append('line')
+    .attr('stroke-width', 1)
+    .attr('stroke', '#FFB74D')
+    .attr('x1', x(0))
+    .attr('y1', y(0))
+
+  const update = (cos, sin) => {
+    cosBar.attr('x2', x(cos))
+    sinBar.attr('y2', y(sin))
+    distance.attr('x2', x(cos)).attr('y2', y(sin))
+  }
+
+  return {
+    svg,
+    update
+  }
+}
+
+
+// // plane.body.selectAll('.axis .tick')
+// //   .filter(function (d) { return d === 0 })
+// //   .remove()
+
+// // https://materialui.co/colors/
+
+
+
+
 
