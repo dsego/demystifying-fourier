@@ -325,7 +325,7 @@
 
       const range = d3.range(domain[0], domain[1]+step, step)
       const x = d3.scaleLinear().domain(domain).range([margin.left, width - margin.right])
-      const y = d3.scaleLinear().domain([0, 50]).range([height - margin.bottom, margin.top])
+      const y = d3.scaleLinear().domain([0, 10]).range([height - margin.bottom, margin.top])
 
 
       svg.append('g')
@@ -729,7 +729,7 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
 
   const signal = sinusoid(2.5)
   const domain = [0, 1]
-  const step = 0.01
+  const step = 0.05
 
   const plot = createLinePlot({
     domain: domain,
@@ -753,7 +753,7 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
 
 
   const freqPlot = createAreaPlot({
-    domain: [-10, 10],
+    domain: [0, 20],
     step: 0.01,
     func: analysis
   })
