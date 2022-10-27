@@ -26,6 +26,333 @@
       flex-shrink: 0;
     }
   </style>
+  <script>
+    const sinusoid = (frequency, phase = 0, amplitude = 1) => (
+      (time) => amplitude * Math.sin(2 * Math.PI * frequency * time + phase)
+    )
+
+    const combine = (...sinusoids) => (
+      (time) => sinusoids.reduce((res, s) => res + s(time), 0)
+    )
+
+    const magnitude = ([a, b]) => Math.sqrt(a * a + b * b)
+
+
+    const createSVG = (width, height) => {
+      const svg = d3.create('svg')
+      svg
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', [0, 0, width, height])
+      return svg
+    }
+
+    const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
+
+    const createSignalPlot = ({domain, step}) => {
+      const width = 800
+      const height = 300
+      const svg = createSVG(width, height)
+
+      const targetPath = svg.insert('path', 'g')
+        .attr('transform', `translate(0, 30)`)
+        .attr('fill', 'none')
+        .attr('stroke', '#29B6F6')
+        .attr('stroke-width', 3)
+
+      const sinePath = svg.insert('path', 'g')
+        .attr('transform', `translate(0, 90)`)
+        .attr('fill', 'none')
+        .attr('stroke', '#E91E63')
+        .attr('stroke-width', 1.5)
+
+      const cosinePath = svg.insert('path', 'g')
+        .attr('transform', `translate(0, 90)`)
+        .attr('fill', 'none')
+        .attr('stroke', '#E91E63')
+        .attr('stroke-width', 1.5)
+
+      const sineTransformPath = svg.insert('path', 'g')
+        .attr('transform', `translate(0, 180)`)
+
+      const cosineTransformPath = svg.insert('path', 'g')
+        .attr('transform', `translate(0, 250)`)
+
+      const range = d3.range(domain[0], domain[1]+step, step)
+      const x = d3.scaleLinear().domain(domain).range([0, width])
+      const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
+      const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
+      const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
+      let result = [0, 0]
+
+      return {
+        svg,
+        result: () => result,
+        update: ({ targetSignal, sine, cosine, sineTransform, cosineTransform }) => {
+          result = [
+            d3.fsum(range, (t) => sineTransform(t)),
+            cosineTransform ? d3.fsum(range, (t) => cosineTransform(t)) : undefined,
+          ]
+          targetPath.attr('d', line(targetSignal)(range))
+          sinePath.attr('d', line(sine)(range))
+          if (cosine) {
+            cosinePath.attr('d', line(cosine)(range))
+          }
+          sineTransformPath
+            .attr('d', area(sineTransform)(range))
+            .attr('fill', color(Math.abs(result[0])))
+          if (cosineTransform) {
+            cosineTransformPath
+              .attr('d', area(cosineTransform)(range))
+              .attr('fill', color(Math.abs(result[1])))
+          }
+        }
+      }
+    }
+
+
+    const createMeter = () => {
+      const width = 300
+      const height = 50
+      const svg = createSVG(width, height)
+      const y = d3.scaleLinear().domain([0, 60]).range([height, 0])
+
+      svg.append('g').call(d3.axisLeft(y))
+
+      const bar = svg.append('rect')
+        .attr('x', 5)
+        .attr('width', 5)
+        .attr('fill', '')
+
+      return {
+        svg,
+        update: (value) => {
+          bar
+            .attr('y', d => y(value))
+            .attr('height', d => y(0) - y(value))
+            .attr('fill', color(Math.abs(value)))
+        }
+      }
+    }
+
+
+
+    const createUnitCircle = () => {
+      const width = 300
+      const height = 300
+      const svg = createSVG(width, height)
+      const x = d3.scaleLinear().domain([-70, 70]).range([0, width])
+      const y = d3.scaleLinear().domain([70, -70]).range([0, height])
+
+      svg.append('ellipse')
+        .attr('cx', x(0))
+        .attr('cy', y(0))
+        .attr('rx', x(50) - x(0))
+        .attr('ry', y(0) - y(50))
+        .attr('fill', 'none')
+        .attr('stroke', '#B0BEC5')
+
+      svg.append('g')
+        .attr('transform', 'translate(' + [0, y(0)] + ')')
+        .call(d3.axisBottom(x))
+      // .append('text')
+      //   .text('cos')
+      //   .attr('x', x(1))
+      //   .attr('dy', -6)
+
+      svg.append('g')
+        .attr('transform', 'translate(' + [x(0), 0] + ')')
+        .call(d3.axisLeft(y))
+      // .append('text')
+      //   .text('sin')
+      //   .attr('transform', 'rotate(-90)')
+      //   .attr('y', 15)
+
+      const cosBar = svg.append('line')
+        .attr('x1', x(0))
+        .attr('y1', y(0))
+        .attr('y2', y(0))
+        .attr('stroke-width', 3)
+        .attr('stroke', '#FFB74D')
+
+      const sinBar = svg.append('line')
+        .attr('stroke-width', 3)
+        .attr('stroke', '#FFB74D')
+        .attr('x1', x(0))
+        .attr('y1', y(0))
+        .attr('x2', x(0))
+
+      const distance = svg.append('line')
+        .attr('stroke-width', 1)
+        .attr('stroke', '#FFB74D')
+        .attr('x1', x(0))
+        .attr('y1', y(0))
+
+      const update = (cos, sin) => {
+        cosBar.attr('x2', x(cos))
+        sinBar.attr('y2', y(sin))
+        distance.attr('x2', x(cos)).attr('y2', y(sin))
+      }
+
+      return {
+        svg,
+        update
+      }
+    }
+
+
+    // // plane.body.selectAll('.axis .tick')
+    // //   .filter(function (d) { return d === 0 })
+    // //   .remove()
+
+    // // https://materialui.co/colors/
+
+
+
+    // const step = 1
+    // const step = 0.1 //  sinc function :D
+
+
+    const createFreqPlot = ({ domain, step, onBinSelected }) => {
+      const height = 200
+      const width = 800
+      const svg = createSVG(width, height)
+      const margin = { top: 20, right: 30, bottom: 30, left: 40 }
+      const range = d3.range(domain[0], domain[1]+step, step)
+
+      const barBand = d3.scaleBand()
+        .domain(range)
+        .range([margin.left, width - margin.right])
+        .padding(0.5)
+
+      const binBand = d3.scaleBand()
+        .domain(range)
+        .range([margin.left, width - margin.right])
+
+      const y = d3.scaleLinear()
+        .domain([0, 55])
+        .range([height - margin.bottom, margin.top])
+
+      const bars = svg.append('g')
+      const bins = svg.append('g').attr('fill', 'transparent')
+
+      svg.append('g')
+        .attr('transform', `translate(0,${y(0)})`)
+        .call(d3.axisBottom(barBand).tickValues(range))
+
+      svg.append('g')
+        .attr('transform', `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(5))
+
+      return {
+        svg,
+        update: (analysis) => {
+          bars.selectAll('rect')
+            .data(range)
+            .join('rect')
+              .attr('fill', '#B0BEC5')
+              .attr('x', i => barBand(i))
+              .attr('y', i => y(analysis(i)))
+              .attr('height', i => y(0) - y(analysis(i)))
+              .attr('width', barBand.bandwidth())
+
+          bins.selectAll('rect')
+            .data(range)
+            .join('rect')
+              .attr('stroke', '#B0BEC5')
+              .attr('stroke-dasharray', '1 3')
+              .attr('x', i => binBand(i))
+              .attr('y', i => y(55))
+              .attr('height', i => y(0) - y(55))
+              .attr('width', binBand.bandwidth())
+              .on('click', (event, i) => {
+                // d3.select(event.target)
+                //   .attr('fill', '#FFCC80')
+                //   .attr('fill-opacity', 0.5)
+                onBinSelected(i)
+              })
+        }
+      }
+    }
+
+
+
+    const createLinePlot = ({domain, step, func}) => {
+      const width = 800
+      const height = 300
+      const svg = createSVG(width, height)
+
+      const margin = { top: 20, right: 30, bottom: 30, left: 40 }
+
+
+      const range = d3.range(domain[0], domain[1]+step, step)
+      const x = d3.scaleLinear().domain(domain).range([margin.left, width - margin.right])
+      const y = d3.scaleLinear().domain([1, -1]).range([margin.top, height - margin.bottom])
+
+
+      svg.append('g')
+        .attr('transform', `translate(0,${y(0)})`)
+        .call(d3.axisBottom(x).ticks(5))
+
+      svg.append('g')
+        .attr('transform', `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(5))
+
+      const line = d3
+        .line()
+        .curve(d3.curveNatural)
+        .x(x)
+        .y((t) => y(func(t)))
+
+      svg.insert('path', 'g')
+        .attr('fill', 'none')
+        .attr('stroke', '#29B6F6')
+        .attr('stroke-width', 1.5)
+        .attr('d', line(range))
+
+      return {
+        svg
+      }
+    }
+
+    const createAreaPlot = ({domain, step, func}) => {
+      const width = 800
+      const height = 300
+      const svg = createSVG(width, height)
+
+      const margin = { top: 20, right: 30, bottom: 30, left: 40 }
+
+
+      const range = d3.range(domain[0], domain[1]+step, step)
+      const x = d3.scaleLinear().domain(domain).range([margin.left, width - margin.right])
+      const y = d3.scaleLinear().domain([0, 50]).range([height - margin.bottom, margin.top])
+
+
+      svg.append('g')
+        .attr('transform', `translate(0,${y(0)})`)
+        .call(d3.axisBottom(x).ticks(15))
+
+      svg.append('g')
+        .attr('transform', `translate(${margin.left},0)`)
+        .call(d3.axisLeft(y).ticks(5))
+
+      const area = d3
+        .area()
+        .curve(d3.curveNatural)
+        .x(x)
+        .y0(y(0))
+        .y1((t) => y(func(t)))
+
+      svg.insert('path', 'g')
+        .attr('fill', '#7986CB')
+        .attr('d', area(range))
+
+      return {
+        svg
+      }
+    }
+
+  </script>
 </head>
 
 <body>
@@ -310,363 +637,136 @@
 
   drawExample(0)
 
-
-  // document.querySelector('#example-4').appendChild(plot.svg.node())
-
+})()</script>
 
 
-  // const waveformLine = d3.line()
-  //   .curve(d3.curveNatural)
-  //   .x(x)
-  //   .y((t) => y(waveform(t)))
-
-  // const waveformPath = svg.insert('path', 'g')
-  //   .attr('transform', `translate(0, 30)`)
-  //   .attr('fill', 'none')
-  //   .attr('stroke', '#0288d1')
-  //   .attr("stroke-width", 2)
-  //   .attr('d', waveformLine(d3.range(0, 1.01, 0.01)))
+<hr />
 
 
-  // const drawComponent = (component, translateY) => {
-  //   const l = d3.line()
-  //     .curve(d3.curveNatural)
-  //     .x(x)
-  //     .y((t) => y(component(t)))
+<h3>Spectral leakage </h3>
+<p> what happens if we analyze in-between frequencies</p>
 
-  //   svg.insert('path', 'g')
-  //     .attr('transform', `translate(0, ${translateY})`)
-  //     .attr('fill', 'none')
-  //     .attr('stroke', '#0288d1')
-  //     .attr('stroke-opacity', 0.6)
-  //     .attr('d', l(d3.range(0, 1.01, 0.01)))
-  // }
+<p> what happens if we use are discrete frequency probes to detect a frequency that's in-between?</p>
+<p> same plots but there is one frequency that's 4.5 Hz or something</p>
 
-  // drawComponent(components[0], 90)
-  // drawComponent(components[1], 140)
-  // drawComponent(components[2], 180)
+<p> We can see that for non-integer frequencies we get spill over into adjacent buckets, the
+by interpolating we can recognize that the actual peak is somewhere between 4Hz & 5Hz</p>
+
+<div id="example-5" class="example-plot">
+  <!-- interactive demo -->
+</div>
 
 
+<script>(() => {
+  const onBinSelected = (i) => drawExample(i)
+  const domain = [0, 1]
+  const step = 0.01
 
-  // const probes = [0, 1, 2].map(() => (
-  //   svg.insert('path', 'g')
-  //     .attr('transform', `translate(0,10)`)
-  //     .attr('fill', 'none')
-  //     .attr('stroke', '#ff5722')
-  //     .attr('stroke-opacity', 0.6)
-  // ))
+  const plot = createSignalPlot({domain, step})
+  document.querySelector('#example-5').appendChild(plot.svg.node())
 
-  // const controls = d3.selectAll('[data-example-99]')
-  // const redraw = () => {
-  //   // probes.forEach((p, i) => {
-  //   //   const input = controls.nodes()[i]
-  //   //   const signal = sinusoid(input.value)
-  //   //   const line = d3.line()
-  //   //     .curve(d3.curveNatural)
-  //   //     .x(x)
-  //   //     .y((t) => y(signal(t)))
-  //   //   p.attr('d', line(d3.range(0, 1.01, 0.01)))
-  //   // })
+  const circle = createUnitCircle()
+  document.querySelector('#example-5').appendChild(circle.svg.node())
+
+  const targetSignal = sinusoid(4.5, Math.PI / 3)
+
+  const analysis = (frequency) => {
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI / 2)
+    // naive DFT
+    const complex = [0, 0]
+    for (const t of d3.range(domain[0], domain[1]+step, step)) {
+      complex[0] += targetSignal(t) * cosine(t),
+      complex[1] -= targetSignal(t) * sine(t)
+    }
+    return magnitude(complex)
+  }
+
+  const freqPlot = createFreqPlot({domain: [0, 10], step: 1, onBinSelected})
+  document.querySelector('#example-5').appendChild(freqPlot.svg.node())
 
 
-  // }
+  const drawExample = (frequency) => {
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/2)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
 
-  // controls.on('change', redraw)
-  // redraw()
+    plot.update({
+      targetSignal,
+      sine,
+      cosine,
+      sineTransform,
+      cosineTransform,
+    })
+
+    freqPlot.update(analysis)
+
+    const [sineResult, cosineResult] = plot.result()
+
+    circle.update(cosineResult, sineResult)
+  }
+
+
+  drawExample(0)
 
 })()</script>
 
 
-<!-- <div id="probing-example-2"></div> -->
-
-<script>
-
-//   // setup
-//   const createChart = (size) => {
-//     const height = 200
-//     const width = 600
-
-//     const svg = d3.create("svg")
-//     svg.attr("viewBox", [0, 0, width, height])
-
-//     const margin = {top: 20, right: 30, bottom: 30, left: 40}
-//     const x = d3.scaleLinear()
-//       .domain([0, size])
-//       .range([margin.left, width - margin.right])
-
-//     const y = d3.scaleLinear()
-//       .domain([-2, 2])
-//       .range([height - margin.bottom, margin.top])
-
-//     // correlation
-//     const area1 = svg.append("path")
-//       .attr("fill", "lightsteelblue")
-//       .attr("fill-opacity", 0.2)
-
-//     const area2 = svg.append("path")
-//       .attr("fill", "lightsteelblue")
-//       .attr("fill-opacity", 0.2)
-
-//     // target signal
-//     const target = svg.append("path")
-//       .attr("fill", "none")
-//       .attr("stroke", "black")
-//       .attr("stroke-dasharray", "2,2")
-//       // .attr("stroke-width", 1.5)
-
-//     // sine probe
-//     const sineProbe = svg.append("path")
-//       .attr("fill", "none")
-//       .attr("stroke", 'deeppink')
-//       // .attr("stroke-opacity", 0.6)
-
-//     // cosine probe
-//     const cosineProbe = svg.append("path")
-//       .attr("fill", "none")
-//       .attr("stroke", "deepskyblue")
-//       // .attr("stroke-opacity", 0.6)
-
-//     const discrete = svg.append("g")
-//       .attr("fill", 'black')
-
-//     const discreteSine = svg.append("g")
-//       .attr("fill", 'deeppink')
-
-//     const discreteCosine = svg.append("g")
-//       .attr("fill", 'deepskyblue')
-
-//     // Axes
-//     svg.append("g")
-//       .attr("transform", `translate(0,${y(0)})`)
-//       .call(d3.axisBottom(x).ticks(size))
-//       .call(g => g.select(".tick:first-of-type text").text(""))
-
-//     svg.append("g")
-//       .attr("transform", `translate(${margin.left},0)`)
-//       .call(d3.axisLeft(y).ticks(5))
-
-//     return {
-//       svg,
-//       draw: (targetSignal, sineProbeSignal, cosineProbeSignal) => {
-//         const correlation = (t) => (0
-//           // targetSignal(t) * sineProbeSignal(t)
-//           // targetSignal(t) * cosineProbeSignal(t)
-//           // Math.abs(targetSignal(t) * cosineProbeSignal(t)) //- 0.5*cosineProbeSignal(t)
-//         )
-//         const targetPath = d3.line().curve(d3.curveNatural).x(x).y((t) => y(targetSignal(t)))
-//         const sineProbePath = d3.line().curve(d3.curveNatural).x(x).y((t) => y(sineProbeSignal(t)))
-//         const cosineProbePath = d3.line().curve(d3.curveNatural).x(x).y((t) => y(cosineProbeSignal(t)))
-//         const areaPath1 = d3.area().x(x).y0(y(0)).y1((t) => y(targetSignal(t) * sineProbeSignal(t)))
-//         const areaPath2 = d3.area().x(x).y0(y(0)).y1((t) => y(targetSignal(t) * cosineProbeSignal(t)))
-
-//         area1.attr("d", areaPath1(d3.range(0, size+0.1, 0.05)))
-//         area2.attr("d", areaPath2(d3.range(0, size+0.1, 0.05)))
-//         target.attr("d", targetPath(d3.range(0, size+0.1, 0.1)))
-//         sineProbe.attr("d", sineProbePath(d3.range(0, size+0.1, 0.1)))
-//         cosineProbe.attr("d", cosineProbePath(d3.range(0, size+0.1, 0.1)))
-
-//         discrete.selectAll("path")
-//           .data(d3.range(0, size))
-//           .join("line")
-//             .attr("stroke", "black")
-//             // .attr("stroke-width", 1)
-//             // .attr("stroke-opacity", 0.8)
-//             .attr("x1", i => x(i))
-//             .attr("x2", i => x(i))
-//             .attr("y1", i => y(targetSignal(i)))
-//             .attr("y2", i => y(0))
-
-//         discrete.selectAll("circle")
-//           .data(d3.range(0, size))
-//           .join("circle")
-//             .attr("cx", i => x(i))
-//             .attr("cy", i => y(targetSignal(i)))
-//             .attr("r", 3)
-
-//         discreteSine.selectAll("circle")
-//           .data(d3.range(0, size))
-//           .join("circle")
-//             .attr("cx", i => x(i))
-//             .attr("cy", i => y(sineProbeSignal(i)))
-//             .attr("r", 3)
-
-//         discreteCosine.selectAll("circle")
-//           .data(d3.range(0, size))
-//           .join("circle")
-//             .attr("cx", i => x(i))
-//             .attr("cy", i => y(cosineProbeSignal(i)))
-//             .attr("r", 3)
-//       }
-//     }
-//   }
-
-//   // frequency chart
-//   // bars are semi-transparent
-//   // selected frequency is highlighted
-
-//   const createFreqGraph = (size, onBarSelected, analysis) => {
-//     const height = 200
-//     const width = 600
-//     const step = 1
-//     // const step = 0.1 //  sinc function? :D
-
-//     const svg = d3.create("svg")
-//     svg.attr("viewBox", [0, 0, width, height])
-
-//     const margin = {top: 20, right: 30, bottom: 30, left: 40}
-//     const band = d3.scaleBand()
-//       .domain(d3.range(0, size, step))
-//       .range([margin.left, width - margin.right])
-//       .padding(0.2)
-
-//     // const point = d3.scaleBand()
-//     //   .domain(d3.range(0, size))
-//     //   .range([margin.left, width - margin.right])
-
-//     const y = d3.scaleLinear()
-//       .domain([0, 15])
-//       .range([height - margin.bottom, margin.top])
-
-//     // const discrete = svg.append("g")
-//     //   .attr("fill", 'black')
-
-//     const bars = svg.append("g")
-//       .attr("fill", "lightsteelblue")
-//       // .attr("fill-opacity", 0.5)
-
-//     // Axes
-//     svg.append("g")
-//       .attr("transform", `translate(0,${y(0)})`)
-//       .call(d3.axisBottom(band).tickValues(d3.range(0, 16)))
-
-//     svg.append("g")
-//       .attr("transform", `translate(${margin.left},0)`)
-//       .call(d3.axisLeft(y).ticks(5))
-
-//     return {
-//       svg,
-//       draw: (signal) => {
-//         bars.selectAll("rect")
-//           .data(d3.range(0, size, step))
-//           .join("rect")
-//             .attr("x", i => band(i))
-//             .attr("y", i => y(analysis(i, signal)))
-//             .attr("height", i => y(0) - y(analysis(i, signal)))
-//             .attr("width", band.bandwidth())
-//             .on("click", (event, i) => {
-//               bars.selectAll("rect").attr("fill", null)
-//               d3.select(event.target).attr("fill", "steelblue")
-//               onBarSelected(i)
-//             })
-//         // discrete.selectAll("path")
-//         //   .data(d3.range(0, size))
-//         //   .join("line")
-//         //     .attr("stroke", "black")
-//         //     // .attr("stroke-width", 1)
-//         //     // .attr("stroke-opacity", 0.8)
-//         //     .attr("x1", i => band(i) + band.bandwidth()/2)
-//         //     .attr("x2", i => band(i) + band.bandwidth()/2)
-//         //     .attr("y1", i => y(analysis(i, signal)))
-//         //     .attr("y2", i => y(0))
-
-//         // discrete.selectAll("circle")
-//         //   .data(d3.range(0, size))
-//         //   .join("circle")
-//         //     .attr("cx", i => band(i) + band.bandwidth()/2)
-//         //     .attr("cy", i => y(analysis(i, signal)))
-//         //     .attr("r", 3)
-//       }
-//     }
-//   }
 
 
+<h3>Sinc function </h3>
 
-//   // const phase = Math.PI / 2
-//   const phase = 0
-//   const size = 16
+<p> <b>2.5Hz</b></p>
 
-//   // const targetFreq = 3.4
-//   const targetFreq = 3.45
-//   const probeFreq = 0
-//   const amplitude = 1.8
+<div id="example-6" class="example-plot">
+  <!-- interactive demo -->
+</div>
 
-//   const targetSignal = (n) => {
-//     // produces sinc function? (because of d3 curveNatural)
-//     // if (parseInt(n) !== n) {
-//     //   console.log(n, parseInt(n))
-//     //   return 0
-//     // }
-//     return hann(n, size) * amplitude * Math.sin(2 * Math.PI * targetFreq * n/size + phase)
-//   }
-//   const sineProbe = (freq) => (n) => Math.sin(2 * Math.PI * freq * n/size)
-//   const cosineProbe = (freq) => (n) => Math.sin(2 * Math.PI * freq * n/size + Math.PI/2)
-//   // const cosineProbe = (freq) => (n) => 0
+<b> TODO: toggle to pick betwee 2Hz and 2.5 Hz, notice the difference between leakage and no leakage
 
-//   // Naive DFT for a single analysis sinusoid
-//   const analysis = (sineProbe, cosineProbe) => (
-//     (analysisFreq, signal) => {
-//       const cosine = cosineProbe(analysisFreq)
-//       const sine = sineProbe(analysisFreq)
-//       const complex = d3.range(0, size).reduce((acc, i) => (
-//         [
-//           acc[0] + signal(i) * cosine(i),
-//           acc[1] - signal(i) * sine(i)
-//         ]
-//       ), [0, 0])
-//       return magnitude(complex)
-//     }
-//   )
+<script>(() => {
 
-//   const magnitude = ([a, b]) => Math.sqrt(a*a + b*b)
+  const signal = sinusoid(2.5)
+  const domain = [0, 1]
+  const step = 0.01
+
+  const plot = createLinePlot({
+    domain: domain,
+    step: step,
+    func: signal
+  })
+  document.querySelector('#example-6').appendChild(plot.svg.node())
 
 
-//   const hann = () => 1
-//   // const hann = (n, size) => 0.5 * (1 - Math.cos(2 * Math.PI * n / (size - 1)))
+  const analysis = (frequency) => {
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI / 2)
+    // naive DFT
+    const complex = [0, 0]
+    for (const t of d3.range(domain[0], domain[1]+step, step)) {
+      complex[0] += signal(t) * cosine(t),
+      complex[1] -= signal(t) * sine(t)
+    }
+    return magnitude(complex)
+  }
 
 
-
-//   const chart1 = createChart(size)
-//   document.querySelector("#probing-example-2").appendChild(chart1.svg.node())
-
-
-//   const onBarSelected = (i) => redraw(i)
-//   const freqGraph = createFreqGraph(size, onBarSelected, analysis(sineProbe, cosineProbe))
-//   document.querySelector("#probing-example-2").appendChild(freqGraph.svg.node())
-
-//   const redraw = (probeFreq) => {
-//     // chart1.draw(targetSignal, sineProbe(probeFreq), () => 0)
-//     chart1.draw(targetSignal, sineProbe(probeFreq), cosineProbe(probeFreq))
-//     freqGraph.draw(targetSignal)
-//   }
-
-//   redraw(probeFreq)
+  const freqPlot = createAreaPlot({
+    domain: [-10, 10],
+    step: 0.01,
+    func: analysis
+  })
+  document.querySelector('#example-6').appendChild(freqPlot.svg.node())
 
 
-//   document.querySelector("#frequency-input")
-//     .addEventListener("change", (e) => redraw(e.target.value))
+})()</script>
 
-
-
-
-
-// </script>
 
 <h3>Complex numbers </h3>
 
-<hr>
 <br>
-<br>
-<br>
-
-
-
-what about DFT and frequency resolutions ???
-<br>
-
-https://dsp.stackexchange.com/questions/31203/frequency-resolution-of-dft
-
-
-
+Just a convenient math way to write sin/cos
 
 
 </body>
