@@ -731,6 +731,14 @@ leakage happens because our sine isn't infinite in time, an infinite sine would 
 but since we are analyzing with a fixed window of time, the sine signal is showing lobes in neighboring frequency bins.
 with a finite window we will have many of our close or periodic probes give a weaker match because they or the signal
 don't fit perfectly in the window and have some scrappy parts near each side of the window.
+
+lobes happens because we the transforms don't cancel out when they should because they are cut off at the ends.
+if we had an infinite window of time, all of these fake matches would cancel out and leave a pure spike for the probe that fully
+matches our sinusoid.
+
+mention "octopus" like shape of freq. spectrum
+
+
 </p>
 
 <label>Size (time)</label>
@@ -772,7 +780,7 @@ don't fit perfectly in the window and have some scrappy parts near each side of 
     }
 
     plot.update({domain, step, func: signal})
-    freqPlot.update({domain: [0, 10], func: analysis, step: 0.01})
+    freqPlot.update({domain: [0, 5], func: analysis, step: 0.01})
   }
 
   d3.select(sizeInput).on('change', drawExample)
