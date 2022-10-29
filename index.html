@@ -213,20 +213,17 @@
     // const step = 0.1 //  sinc function :D
 
 
-    const createFreqPlot = ({ domain, step, onBinSelected }) => {
+    const createFreqPlot = ({ domain, onBinSelected }) => {
       const height = 200
       const width = 800
       const svg = createSVG(width, height)
       const margin = { top: 20, right: 30, bottom: 30, left: 40 }
-      const range = d3.range(domain[0], domain[1]+step, step)
 
       const barBand = d3.scaleBand()
-        .domain(range)
         .range([margin.left, width - margin.right])
         .padding(0.5)
 
       const binBand = d3.scaleBand()
-        .domain(range)
         .range([margin.left, width - margin.right])
 
       const y = d3.scaleLinear()
@@ -236,9 +233,8 @@
       const bars = svg.append('g')
       const bins = svg.append('g').attr('fill', 'transparent')
 
-      svg.append('g')
+      const xAxis = svg.append('g')
         .attr('transform', `translate(0,${y(0)})`)
-        .call(d3.axisBottom(barBand).tickValues(range))
 
       svg.append('g')
         .attr('transform', `translate(${margin.left},0)`)
@@ -246,7 +242,12 @@
 
       return {
         svg,
-        update: (analysis) => {
+        update: (analysis, step) => {
+          const range = d3.range(domain[0], domain[1]+step, step)
+          barBand.domain(range)
+          binBand.domain(range)
+          xAxis.call(d3.axisBottom(barBand).tickValues(range))
+
           bars.selectAll('rect')
             .data(range)
             .join('rect')
@@ -504,7 +505,10 @@
 
 - we are now dealing with two numbers... you can notice both match partially, from this we can construct a complete match
 
-- we don't need anymore sinusoids, since the next two sinusoids (apart by π/2) would just be the negatives of our sin/cos probes
+- we don't need any more sinusoids to cover the rest of the quadrants, since the next two sinusoids (apart by π/2) would just be the negatives of our sin/cos probes
+
+
+TODO: draw what it would look like with 4 sinusoids π/2 apart
 
 <br><code> sin(π) = -sin(0) &  cos(3π/4) = -cos(0)</code>
 
@@ -577,18 +581,29 @@
 <div id="example-4" class="example-plot">
   <!-- interactive demo -->
 </div>
+<select id="example-4-step">
+  <option value="1">1Hz</option>
+  <option value="0.5">0.5Hz</option>
+  <option value="0.25">0.25Hz</option>
+</select>
 
 
 <script>(() => {
-  const onBinSelected = (i) => drawExample(i)
+  let frequency = 0
   const domain = [0, 1]
   const step = 0.01
 
+  const onBinSelected = (i) => {
+    frequency = i
+    drawExample()
+  }
   const plot = createSignalPlot({domain, step})
   document.querySelector('#example-4').appendChild(plot.svg.node())
 
   const circle = createUnitCircle()
   document.querySelector('#example-4').appendChild(circle.svg.node())
+
+  const stepInput = document.querySelector('#example-4-step')
 
   const components = [
     sinusoid(2),
@@ -609,15 +624,16 @@
     return magnitude(complex)
   }
 
-  const freqPlot = createFreqPlot({domain: [0, 10], step: 1, onBinSelected})
+  const freqPlot = createFreqPlot({domain: [0, 10], onBinSelected})
   document.querySelector('#example-4').appendChild(freqPlot.svg.node())
 
 
-  const drawExample = (frequency) => {
+  const drawExample = () => {
     const sine = sinusoid(frequency)
     const cosine = sinusoid(frequency, Math.PI/2)
     const sineTransform = (t) => targetSignal(t) * sine(t)
     const cosineTransform = (t) => targetSignal(t) * cosine(t)
+    const step = Number(stepInput.value)
 
     plot.update({
       targetSignal,
@@ -627,15 +643,16 @@
       cosineTransform,
     })
 
-    freqPlot.update(analysis)
+    freqPlot.update(analysis, step)
 
     const [sineResult, cosineResult] = plot.result()
 
     circle.update(cosineResult, sineResult)
   }
 
+  d3.select(stepInput).on('change', drawExample)
 
-  drawExample(0)
+  drawExample()
 
 })()</script>
 
@@ -656,9 +673,19 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
   <!-- interactive demo -->
 </div>
 
+<select id="example-5-step">
+  <option value="1">1Hz</option>
+  <option value="0.5">0.5Hz</option>
+  <option value="0.25">0.25Hz</option>
+</select>
+
 
 <script>(() => {
-  const onBinSelected = (i) => drawExample(i)
+  let frequency = 0
+  const onBinSelected = (i) => {
+    frequency = i
+    drawExample()
+  }
   const domain = [0, 1]
   const step = 0.01
 
@@ -668,11 +695,13 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
   const circle = createUnitCircle()
   document.querySelector('#example-5').appendChild(circle.svg.node())
 
+  const stepInput = document.querySelector('#example-5-step')
+
   const targetSignal = sinusoid(4.5, Math.PI / 3)
 
-  const analysis = (frequency) => {
-    const sine = sinusoid(frequency)
-    const cosine = sinusoid(frequency, Math.PI / 2)
+  const analysis = (f) => {
+    const sine = sinusoid(f)
+    const cosine = sinusoid(f, Math.PI / 2)
     // naive DFT
     const complex = [0, 0]
     for (const t of d3.range(domain[0], domain[1]+step, step)) {
@@ -685,8 +714,8 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
   const freqPlot = createFreqPlot({domain: [0, 10], step: 1, onBinSelected})
   document.querySelector('#example-5').appendChild(freqPlot.svg.node())
 
-
-  const drawExample = (frequency) => {
+  const drawExample = () => {
+    const step = Number(stepInput.value)
     const sine = sinusoid(frequency)
     const cosine = sinusoid(frequency, Math.PI/2)
     const sineTransform = (t) => targetSignal(t) * sine(t)
@@ -700,15 +729,15 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
       cosineTransform,
     })
 
-    freqPlot.update(analysis)
+    freqPlot.update(analysis, step)
 
     const [sineResult, cosineResult] = plot.result()
 
     circle.update(cosineResult, sineResult)
   }
+  d3.select(stepInput).on('change', drawExample)
 
-
-  drawExample(0)
+  drawExample()
 
 })()</script>
 
