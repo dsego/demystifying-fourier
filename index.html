@@ -127,44 +127,64 @@
 
       svg.append('g')
         .attr('transform', 'translate(' + [0, y(0)] + ')')
-        .call(d3.axisBottom(x))
-      // .append('text')
-      //   .text('cos')
-      //   .attr('x', x(1))
-      //   .attr('dy', -6)
+        .call(d3.axisBottom(x).ticks(2))
+      svg.append('text')
+        .text('cos')
+        .attr('x', 270)
+        .attr('y', 170)
 
       svg.append('g')
         .attr('transform', 'translate(' + [x(0), 0] + ')')
-        .call(d3.axisLeft(y))
-      // .append('text')
-      //   .text('sin')
-      //   .attr('transform', 'rotate(-90)')
-      //   .attr('y', 15)
+        .call(d3.axisLeft(y).ticks(2))
+      svg.append('text')
+        .text('sin')
+        .attr('x', 270)
+        .attr('y', 170)
+        .style('transform-origin', 'center')
+        .style('transform', 'rotate(-90deg)')
 
       const cosBar = svg.append('line')
         .attr('x1', x(0))
         .attr('y1', y(0))
         .attr('y2', y(0))
-        .attr('stroke-width', 3)
-        .attr('stroke', '#FFB74D')
+        .attr('stroke-width', 2)
+        .attr('stroke', '#E91E63')
 
       const sinBar = svg.append('line')
-        .attr('stroke-width', 3)
-        .attr('stroke', '#FFB74D')
+        .attr('stroke-width', 2)
+        .attr('stroke', '#E91E63')
         .attr('x1', x(0))
         .attr('y1', y(0))
         .attr('x2', x(0))
 
       const distance = svg.append('line')
-        .attr('stroke-width', 1)
-        .attr('stroke', '#FFB74D')
+        .attr('stroke-width', 2)
+        .attr('stroke', '#E91E63')
         .attr('x1', x(0))
         .attr('y1', y(0))
+
+      const arcPath = svg.insert('path')
+        .style('transform', 'translate(150px, 150px)')
+        .attr('fill', '#E91E63')
+        .attr('stroke', 'none')
+        .attr('fill-opacity', 0.2)
+
+      const arc = d3.arc()
+        .innerRadius(0)
 
       const update = (cos, sin) => {
         cosBar.attr('x2', x(cos))
         sinBar.attr('y2', y(sin))
         distance.attr('x2', x(cos)).attr('y2', y(sin))
+
+        const dx = Math.abs(x(cos) - x(0))
+        const dy = Math.abs(y(sin) - y(0))
+
+        arc
+          .startAngle(Math.PI/2 - Math.atan2(sin, cos))
+          .endAngle(Math.sign(cos) * Math.PI/2)
+          .outerRadius(Math.min(40, dx, dy))
+        arcPath.attr('d', arc())
       }
 
       return {
