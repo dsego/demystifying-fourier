@@ -181,9 +181,9 @@
         const dy = Math.abs(y(sin) - y(0))
 
         arc
-          .startAngle(Math.PI/2 - Math.atan2(sin, cos))
-          .endAngle(Math.sign(cos) * Math.PI/2)
-          .outerRadius(Math.min(40, dx, dy))
+          .startAngle(Math.PI/2)
+          .endAngle(Math.PI/2 - Math.atan2(sin, cos))
+          .outerRadius(Math.min(40, 0.8 * Math.sqrt(dx*dx + dy*dy)))
         arcPath.attr('d', arc())
       }
 
@@ -502,13 +502,11 @@
 - we don't need any more sinusoids to cover the rest of the quadrants, since the next two sinusoids (apart by π/2) would just be the negatives of our sin/cos probes
 
 
-TODO: draw what it would look like with 4 sinusoids π/2 apart
-
 <br><code> sin(π) = -sin(0) &  cos(3π/4) = -cos(0)</code>
 
 <p> from the ratio of our sine and cosine matches we can figure out the actual phase and magnitude (as if we were using a sinusoid of that phase).
 <p> magnitude is just the length of the diagonal line, which is equal to sqrt(sin<sup>2</sup> + cos<sup>2</sup>) </p>
-<br><b>TODO</b> draw phase angle
+
 </p>
 
 
@@ -560,6 +558,54 @@ TODO: draw what it would look like with 4 sinusoids π/2 apart
   drawExample()
 
 
+})()</script>
+
+<h3>Sin/cos probes and their negatives</h3>
+
+<div id="example-31" class="example-plot">
+</div>
+<script>(() => {
+
+const height = 200
+const width = 800
+const domain = [0, 1]
+const step = 0.01
+const frequency = 1
+const svg = createSVG(width, height)
+const range = d3.range(domain[0], domain[1]+step, step)
+const x = d3.scaleLinear().domain(domain).range([10, width-10])
+const y = d3.scaleLinear().domain([1, -1]).range([10, height-10])
+
+const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#F06292')
+  .attr('stroke-width', 2)
+  .attr('d', line(sinusoid(frequency))(range))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#64B5F6')
+  .attr('stroke-width', 2)
+  .attr('d', line(sinusoid(frequency, Math.PI/2))(range))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#64B5F6')
+  .attr('stroke-width', 2)
+  .attr('stroke-dasharray', '2 2')
+  .attr('d', line(sinusoid(frequency, 1.5*Math.PI))(range))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#F06292')
+  .attr('stroke-width', 2)
+  .attr('stroke-dasharray', '2 2')
+  .attr('d', line(sinusoid(frequency, Math.PI))(range))
+
+
+document.querySelector('#example-31').appendChild(svg.node())
 })()</script>
 
 
@@ -819,6 +865,18 @@ Just a convenient math way to write sin/cos
 sin cos pair need to be separated somehow, ergo multiply sin component by the imaginary number
 real & imaginary don't mix.
 
+
+<hr>
+<pre>
+TODO: add labels on the left side of example: target function, sine probe function (reflects changing freq) and transform function
+
+
+TODO: draw what it would look like with 4 sinusoids π/2 apart (faint sinusoids)
+
+
+
+TODO clicking should draw "frames" to highlight selected bin
+</pre>
 
 </body>
 </html>
