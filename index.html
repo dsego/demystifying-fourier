@@ -4,18 +4,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Interactive DFT</title>
+  <title>Intuitive intro to sound analysis</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="./common.js"></script>
   <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
   <style>
-    input[type=range] {
-      width: 500px;
-    }
-
     .example-plot {
-/*      display: flex;*/
       width:800px;
       margin-left: -25px;
     }
@@ -24,6 +18,41 @@
       display: block;
       flex-grow: 1;
       flex-shrink: 0;
+    }
+
+    .range-slider {
+      display: flex;
+      gap: 10px;
+      position: relative;
+      align-items: center;
+    }
+
+    .range-slider input {
+      margin-bottom: 0;
+    }
+
+    .range-slider output {
+      display: inline-block;
+      position: relative;
+      min-width: 50px;
+      line-height: 20px;
+      text-align: center;
+      border-radius: 3px;
+      background: #CFD8DC;
+      padding: 5px 10px;
+      margin-left: 8px;
+      margin-bottom: 0;
+    }
+    .range-slider output::after {
+      position: absolute;
+      top: 8px;
+      left: -7px;
+      width: 0;
+      height: 0;
+      border-top: 7px solid transparent;
+      border-right: 7px solid #CFD8DC;
+      border-bottom: 7px solid transparent;
+      content: '';
     }
   </style>
   <script>
@@ -124,6 +153,7 @@
         .attr('ry', y(0) - y(50))
         .attr('fill', 'none')
         .attr('stroke', '#B0BEC5')
+        .attr('stroke-dasharray', '3 2')
 
       svg.append('g')
         .attr('transform', 'translate(' + [0, y(0)] + ')')
@@ -193,19 +223,6 @@
       }
     }
 
-
-    // // plane.body.selectAll('.axis .tick')
-    // //   .filter(function (d) { return d === 0 })
-    // //   .remove()
-
-    // // https://materialui.co/colors/
-
-
-
-    // const step = 1
-    // const step = 0.1 //  sinc function :D
-
-
     const createFreqPlot = ({ domain, onBinSelected }) => {
       const height = 200
       const width = 800
@@ -255,7 +272,7 @@
           binLines.selectAll('line')
             .data(range)
             .join('line')
-              .attr('stroke', '#CFD8DC')
+              .attr('stroke', '#B0BEC5')
               .attr('stroke-dasharray', '3 2')
               .attr('x1', d => binBand(d) + binBand.bandwidth())
               .attr('y1', y(0))
@@ -364,7 +381,7 @@
 
 <body>
 
-<h1>DFT</h1>
+<h1>Intuitive intro to sound analysis</h1>
 
 <p>
 <pre>
@@ -389,7 +406,7 @@
 
 
 
-<h2>Probing</h2>
+<h2>Probing with a single sinewave - fixed phase </h2>
 
 <img src="https://i.imgflip.com/gkh5g.jpg" />
 
@@ -414,9 +431,12 @@
   <!-- interactive demo -->
 </div>
 
-<input id="example-1-control" type="range" value=0 min=0 max=10 step=1>
-<br>
-<span id="example-1-result"></span>
+<div class="range-slider">
+  <input id="example-1-control" type="range" value=0 min=0 max=10 step=1>
+  <output id="example-1-freq"></output>
+</div>
+
+<output id="example-1-result"></output>
 
 <script>(() => {
   const targetSignal = sinusoid(4)
@@ -424,6 +444,7 @@
   document.querySelector('#example-1').appendChild(plot.svg.node())
 
   const input = document.getElementById('example-1-control')
+  const freqLabel = document.getElementById('example-1-freq')
   const resultLabel = document.getElementById('example-1-result')
 
   const drawExample = () => {
@@ -436,7 +457,8 @@
       sineTransform,
     })
     const [result, _] = plot.result()
-    resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
+    freqLabel.innerText = `${frequency}Hz`
+    resultLabel.innerText = `sine transform=${result.toFixed(2)} (${result})`
   }
   d3.select(input).on('change', drawExample)
   drawExample()
@@ -450,7 +472,6 @@
 <p> Why can't we match the signal?</p>
 
 <p> Let's try using a cosine transform to probe ... notice we're also getting some noise  (non-zero results for non-matching frequencies)
-    is it because of hann window??
 </p>
 
 <div id="example-2" class="example-plot">
@@ -463,8 +484,11 @@
     <option value="cosine">Cosine</option>
   </select>
 </p>
-<input id="example-2-freq"  type="range" value=0 min=0 max=10 step=1>
-<span id="example-2-result"></span>
+<div class="range-slider">
+  <input id="example-2-freq-input"  type="range" value=0 min=0 max=10 step=1>
+  <output id="example-2-freq-label"></output>
+</div>
+<output id="example-2-result"></output>
 
 <script>(() => {
   const targetSignal = sinusoid(4, Math.PI/2)
@@ -473,7 +497,8 @@
   document.querySelector('#example-2').appendChild(plot.svg.node())
 
   const typeInput = document.getElementById('example-2-transform-type')
-  const freqInput = document.getElementById('example-2-freq')
+  const freqInput = document.getElementById('example-2-freq-input')
+  const freqLabel = document.getElementById('example-2-freq-label')
   const resultLabel = document.getElementById('example-2-result')
 
   const drawExample = () => {
@@ -489,7 +514,8 @@
       sineTransform,
     })
     const [result, _] = plot.result()
-    resultLabel.innerText = `f=${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
+    freqLabel.innerText = `${frequency}Hz`
+    resultLabel.innerText = `${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
   }
 
   d3.selectAll([typeInput, freqInput]).on('change', drawExample)
@@ -522,13 +548,17 @@
   <div id="example-3-xy-plot-"></div>
 </div>
 
-<input id="example-3-freq"  type="range" value=0 min=0 max=10 step=1>
-<br>
-<span id="example-3-result"></span>
+<div class="range-slider">
+  <input id="example-3-freq-input"  type="range" value=0 min=0 max=10 step=1>
+  <output id="example-3-freq-label"></output>
+</div>
+
+<output id="example-3-result"></output>
 
 <script>(() => {
   const targetSignal = sinusoid(4, Math.PI/4)
-  const freqInput = document.getElementById('example-3-freq')
+  const freqInput = document.getElementById('example-3-freq-input')
+  const freqLabel = document.getElementById('example-3-freq-label')
   const resultLabel = document.getElementById('example-3-result')
 
   const plot = createSignalPlot({domain: [0, 1], step: 0.01})
@@ -555,7 +585,8 @@
     const [sineResult, cosineResult] = plot.result()
 
     circle.update(cosineResult, sineResult)
-    resultLabel.innerText = `f=${frequency}Hz,
+    freqLabel.innerText = `${frequency}Hz`
+    resultLabel.innerText = `
       transform=(${sineResult.toFixed(2)}, ${cosineResult.toFixed(2)})
       magnitude=${magnitude([sineResult, cosineResult]).toFixed(2)}
     `
@@ -709,10 +740,7 @@ document.querySelector('#example-31').appendChild(svg.node())
 
 <h3>Spectral leakage </h3>
 <p> what happens if we analyze in-between frequencies</p>
-
-<p> what happens if we use are discrete frequency probes to detect a frequency that's in-between?</p>
 <p> same plots but there is one frequency that's 4.5 Hz or something</p>
-
 <p> We can see that for non-integer frequencies we get spill over into adjacent buckets, the
 by interpolating we can recognize that the actual peak is somewhere between 4Hz & 5Hz</p>
 
