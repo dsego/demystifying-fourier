@@ -268,24 +268,23 @@
         .style('transform-origin', 'center')
         .style('transform', 'rotate(-90deg)')
 
-      const arcPath = svg.insert('path')
+      const arcPath = svg.insert('path', 'g')
         .style('transform', 'translate(150px, 150px)')
-        .attr('fill', '#EC407A')
-        .attr('stroke', 'none')
-        .attr('fill-opacity', 0.2)
+        .attr('fill', '#FFF3E0')
+        .attr('stroke', '#FFCC80')
 
       const cosBar = svg.append('line')
         .attr('x1', x(0))
         .attr('y1', y(0))
         .attr('y2', y(0))
-        .attr('stroke-width', 2)
+        .attr('stroke-width', 3)
         .attr('stroke-linecap', 'round')
-        .attr('stroke', '#EC407A')
+        .attr('stroke', '#FF9800')
 
       const sinBar = svg.append('line')
-        .attr('stroke-width', 2)
+        .attr('stroke-width', 3)
         .attr('stroke-linecap', 'round')
-        .attr('stroke', '#EC407A')
+        .attr('stroke', '#FF9800')
         .attr('x1', x(0))
         .attr('y1', y(0))
         .attr('x2', x(0))
@@ -293,7 +292,7 @@
       const distance = svg.append('line')
         .attr('stroke-width', 2)
         .attr('stroke-linecap', 'round')
-        .attr('stroke', '#EC407A')
+        .attr('stroke', '#FF9800')
         .attr('x1', x(0))
         .attr('y1', y(0))
 
@@ -353,7 +352,7 @@
       const selectedBin = svg.append('rect')
         .attr('fill', 'transparent')
         .attr('stroke-width', 2)
-        .attr('stroke', '#EC407A')
+        .attr('stroke', '#FFA726')
         .attr('y', y(55))
         .attr('height', y(0) - y(55))
         .attr('rx', 3)
@@ -369,7 +368,7 @@
           bars.selectAll('rect')
             .data(range)
             .join('rect')
-              .attr('fill', '#F8BBD0')
+              .attr('fill', '#FFE0B2')
               .attr('x', d => barBand(d) + 0.2 * barBand.bandwidth())
               .attr('y', d => y(analysis(d)))
               .attr('height', d => y(0) - y(analysis(d)))
@@ -598,7 +597,7 @@
 
 <h3>Probing and phase</h3>
 
-<p>The signal is still 4Hz but offset by a phase π/2 </p>
+<p>The signal is still 4Hz but offset by a quarter of a turn (phase π/2) </p>
 <p> Why can't we match the signal?</p>
 
 <p> Let's try using a cosine transform to probe ... notice we're also getting some noise  (non-zero results for non-matching frequencies)
