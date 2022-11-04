@@ -136,8 +136,8 @@
           targetPath
             .attr('d', line(targetSignal)(range))
 
-          sinePath
-            .attr('visibility', showSine ? 'visible' : 'hidden')
+          sinePath.attr('visibility', showSine ? 'visible' : 'hidden')
+          cosinePath.attr('visibility', showCosine ? 'visible' : 'hidden')
 
           // morph from flat line into sine/cosine
           if (frequency == 0 || prevFreq == 0) {
@@ -159,7 +159,6 @@
               .attr('transform', `scale(1 1)`)
 
             cosinePath
-              .attr('visibility', showCosine ? 'visible' : 'hidden')
               .attr('d', line(cosine)(range))
               .attr('transform', `scale(${scale} 1)`)
               .transition()
