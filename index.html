@@ -164,7 +164,7 @@
 
           sinePath.attr('visibility', showSine ? 'visible' : 'hidden')
           cosinePath.attr('visibility', showCosine ? 'visible' : 'hidden')
-          transformLabel.attr('y', showCosine ? 240 : 210)
+          transformLabel.attr('y', showCosine && showSine ? 240 : 210)
 
           // morph from flat line into sine/cosine
           if (frequency == 0 || prevFreq == 0) {
@@ -226,7 +226,7 @@
             .attr('d', area(cosineTransform)(range))
 
           if (showCosine && !showSine) {
-            cosineTransformPath.attr('transform', 'translate(0, 180)')
+            cosineTransformPath.attr('transform', `translate(${marginLeft}, 180)`)
           }
 
           prevFreq = frequency
