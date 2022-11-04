@@ -54,6 +54,12 @@
       border-bottom: 7px solid transparent;
       content: '';
     }
+
+    .signal-label {
+      fill: #37474F;
+      font-size: 0.8rem;
+      text-anchor: middle;
+    }
   </style>
   <script>
     const sinusoid = (frequency, phase = 0, amplitude = 1) => (
@@ -81,17 +87,24 @@
     const createSignalPlot = ({domain, step }) => {
       const width = 800
       const height = 300
+      const marginLeft = 70
       const svg = createSVG(width, height)
 
       const targetPath = svg.insert('g')
-        .attr('transform', 'translate(0, 30)')
+        .attr('transform', `translate(${marginLeft}, 30)`)
         .insert('path')
           .attr('fill', 'none')
           .attr('stroke', '#29B6F6')
           .attr('stroke-width', 3)
 
+      svg.append('text')
+        .attr('class', 'signal-label')
+        .text('target')
+        .attr('x', 30)
+        .attr('y', 60)
+
       const sinePath = svg.insert('g')
-        .attr('transform', 'translate(0, 90)')
+        .attr('transform', `translate(${marginLeft}, 90)`)
         .insert('path')
           .attr('fill', 'none')
           .attr('stroke', '#E91E63')
@@ -99,21 +112,34 @@
           .attr('vector-effect', 'non-scaling-stroke')
 
       const cosinePath = svg.insert('g')
-        .attr('transform', 'translate(0, 90)')
+        .attr('transform', `translate(${marginLeft}, 90)`)
         .insert('path')
           .attr('fill', 'none')
           .attr('stroke', '#E91E63')
           .attr('stroke-width', 1.5)
           .attr('vector-effect', 'non-scaling-stroke')
 
+      svg.append('text')
+        .attr('class', 'signal-label')
+        .text('probe')
+        .attr('x', 30)
+        .attr('y', 120)
+
       const sineTransformPath = svg.insert('path', 'g')
-        .attr('transform', 'translate(0, 180)')
+        .attr('transform', `translate(${marginLeft}, 180)`)
 
       const cosineTransformPath = svg.insert('path', 'g')
-        .attr('transform', 'translate(0, 250)')
+        .attr('transform', `translate(${marginLeft}, 250)`)
+
+      const transformLabel = svg.append('text')
+        .attr('class', 'signal-label')
+        .text('transform')
+        .attr('x', 30)
+        .attr('y', 210)
+
 
       const range = d3.range(domain[0], domain[1]+step, step)
-      const x = d3.scaleLinear().domain(domain).range([0, width])
+      const x = d3.scaleLinear().domain(domain).range([0, width-marginLeft])
       const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
       const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
       const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
@@ -138,6 +164,7 @@
 
           sinePath.attr('visibility', showSine ? 'visible' : 'hidden')
           cosinePath.attr('visibility', showCosine ? 'visible' : 'hidden')
+          transformLabel.attr('y', showCosine ? 240 : 210)
 
           // morph from flat line into sine/cosine
           if (frequency == 0 || prevFreq == 0) {
@@ -532,8 +559,6 @@
 
  </p>
 
- <p>TODO: add labels on the left side of example:  target function, sine probe function (reflects changing freq) and transform function</p>
-
 <div id="example-1" class="example-plot">
   <!-- interactive demo -->
 </div>
@@ -746,6 +771,7 @@ document.querySelector('#example-31').appendChild(svg.node())
   Complex signal (2Hz + 4Hz + 7Hz)
   - frequency graph with bins shows magnitudes for all probed frequencies
 
+  - notice that the 0Hz band for cosine produces an average of the signal
 </pre>
 
 
@@ -970,15 +996,10 @@ mention "octopus" like shape of freq. spectrum
 Just a convenient math way to write sin/cos
 
 
-sin cos pair need to be separated somehow, ergo multiply sin component by the imaginary number
+sin cos pair need to be separated somehow in a convenient math expression, ergo multiply sin component by the imaginary number
 real & imaginary don't mix.
 
 
-<hr>
-<pre>
-TODO: add labels on the left side of example: target function, sine probe function (reflects changing freq) and transform function
-
-</pre>
 
 </body>
 </html>
