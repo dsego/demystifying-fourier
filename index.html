@@ -275,18 +275,12 @@
       }
     }
 
-    const createPhaseDemoPlot = ({domain, step, onPhaseChange}) => {
+    const createPhaseDemoPlot = ({domain, onPhaseChange}) => {
       const width = 820
       const height = 320
       const marginLeft = 70
 
-      const range = d3.range(domain[0], domain[1]+step, step)
-      const x = d3.scaleLinear().domain(domain).range([marginLeft, width])
       const dragScale = d3.scaleLinear().domain(domain).range([0, width-marginLeft])
-      const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
-      const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
-      const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
-
       const svg = createSVG(width, height)
 
       let dragPos = [0, 0]
@@ -360,24 +354,18 @@
 
       return {
         svg,
-        update: ({targetSignal, frequency}) => {
-          const sine = sinusoid(frequency)
-          const cosine = sinusoid(frequency, Math.PI/2)
-          const sineTransform = (t) => targetSignal(t) * sine(t)
-          const cosineTransform = (t) => targetSignal(t) * cosine(t)
+        update: ({targetData, sineData, cosineData, sineTransformData, cosineTransformData}) => {
+          const x = d3.scaleLinear().domain([0, targetData.length]).range([marginLeft, width])
+          const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
 
-          const result = [
-            d3.fsum(range, (t) => cosineTransform(t)),
-            d3.fsum(range, (t) => sineTransform(t)),
-          ]
+          const line = d3.line().curve(d3.curveNatural).x((d, i) => x(i)).y((d) => y(d))
+          const area = d3.area().curve(d3.curveNatural).x((d, i) => x(i)).y0(y(0)).y1((d) => y(d))
 
-          targetPath.attr('d', line(targetSignal)(range))
-          sinePath.attr('d', line(sine)(range))
-          cosinePath.attr('d', line(cosine)(range))
-          sineTransformPath.attr('d', area(sineTransform)(range))
-          cosineTransformPath.attr('d', area(cosineTransform)(range))
-
-          return result
+          targetPath.attr('d', line(targetData))
+          sinePath.attr('d', line(sineData))
+          cosinePath.attr('d', line(cosineData))
+          sineTransformPath.attr('d', area(sineTransformData))
+          cosineTransformPath.attr('d', area(cosineTransformData))
         }
       }
     }
@@ -490,7 +478,7 @@
       }
     }
 
-    const createFreqBarPlot = ({ domain, onBinSelected }) => {
+    const createFreqBarPlot = ({domain, onBinSelected}) => {
       const height = 200
       const width = 670
       const svg = createSVG(width, height)
@@ -910,6 +898,8 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
 <figure id="example-311"><!-- interactive demo --></figure>
 
 <script>(() => {
+  const domain = [0, 1]
+  const step = 0.01
   const frequency = 4
   let phase = Math.PI/4
   let targetSignal = sinusoid(frequency, phase)
@@ -920,15 +910,35 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
     draw()
   }
 
-  const plot = createPhaseDemoPlot({domain: [0, 1], step: 0.01, onPhaseChange})
+  const range = d3.range(domain[0], domain[1]+0.01, 0.01)
+  const plot = createPhaseDemoPlot({domain, onPhaseChange})
   document.querySelector('#example-31').appendChild(plot.svg.node())
 
   const circle = createUnitCircle({enableTransitions: false})
   document.querySelector('#example-311').appendChild(circle.svg.node())
 
+  const sine = sinusoid(frequency)
+  const cosine = sinusoid(frequency, Math.PI/2)
+  const sineData = range.map((d) => sine(d))
+  const cosineData = range.map((d) => cosine(d))
+
   const draw = () => {
-    const [cosineResult, sineResult] = plot.update({targetSignal, frequency})
-    circle.update(cosineResult, sineResult)
+    const targetData = range.map((d) => targetSignal(d))
+    const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
+    const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
+
+    plot.update({
+      targetData,
+      sineData,
+      cosineData,
+      sineTransformData,
+      cosineTransformData,
+    })
+
+    circle.update(
+      d3.fsum(sineTransformData),
+      d3.fsum(cosineTransformData),
+    )
   }
   draw()
 
