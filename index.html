@@ -114,6 +114,7 @@
       const svg = d3.create('svg')
       svg
         .attr('width', width)
+        .attr('height', height)
         .attr('viewBox', [0, 0, width, height])
       return svg
     }
@@ -124,11 +125,21 @@
       const width = 820
       const height = single ? 250 : 320
       const marginLeft = 70
+
+      const range = d3.range(domain[0], domain[1]+step, step)
+      const x = d3.scaleLinear().domain(domain).range([0, width-marginLeft])
+      const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
+      const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
+      const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
+      let result = [0, 0]
+      let prevFreq = 0
+
       const svg = createSVG(width, height)
 
-      const targetPath = svg.insert('g')
+      const g = svg.insert('g')
         .attr('transform', `translate(${marginLeft}, 30)`)
-        .insert('path')
+
+      const targetPath = g.insert('path')
           .attr('fill', 'none')
           .attr('stroke', '#29B6F6')
           .attr('stroke-width', 2.5)
@@ -173,28 +184,19 @@
         .attr('x', 30)
         .attr('y', 210)
 
-
-      const range = d3.range(domain[0], domain[1]+step, step)
-      const x = d3.scaleLinear().domain(domain).range([0, width-marginLeft])
-      const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
-      const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
-      const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
-      let result = [0, 0]
-      let prevFreq = 0
-
       return {
         svg,
-        result: () => result,
         update: ({ targetSignal, frequency, showSine, showCosine }) => {
           const sine = sinusoid(frequency)
           const cosine = sinusoid(frequency, Math.PI/2)
           const sineTransform = (t) => targetSignal(t) * sine(t)
           const cosineTransform = (t) => targetSignal(t) * cosine(t)
 
-          result = [
+          const result = [
+            d3.fsum(range, (t) => cosineTransform(t)),
             d3.fsum(range, (t) => sineTransform(t)),
-            cosineTransform ? d3.fsum(range, (t) => cosineTransform(t)) : undefined,
           ]
+
           targetPath
             .transition()
             .attr('d', line(targetSignal)(range))
@@ -267,11 +269,120 @@
           }
 
           prevFreq = frequency
+
+          return result
         }
       }
     }
 
-    const createUnitCircle = () => {
+    const createPhaseDemoPlot = ({domain, step, onPhaseChange}) => {
+      const width = 820
+      const height = 320
+      const marginLeft = 70
+
+      const range = d3.range(domain[0], domain[1]+step, step)
+      const x = d3.scaleLinear().domain(domain).range([marginLeft, width])
+      const dragScale = d3.scaleLinear().domain(domain).range([0, width-marginLeft])
+      const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
+      const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
+      const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
+
+      const svg = createSVG(width, height)
+
+      let dragPos = [0, 0]
+      const drag = d3.drag()
+        .on('drag', (e) => onPhaseChange(dragScale.invert(e.dx)))
+
+      const g = svg.insert('g')
+        .attr('transform', `translate(0, 30)`)
+        .call(drag)
+
+      g.insert('rect')
+        .attr('cursor', 'ew-resize')
+        .attr('fill', 'transparent')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', width)
+        .attr('height', 60)
+
+      const targetPath = g.insert('path')
+        .attr('fill', 'none')
+        .attr('stroke', '#29B6F6')
+        .attr('stroke-width', 2.5)
+
+      svg.append('text')
+        .attr('class', 'signal-label')
+        .text('target')
+        .attr('x', 30)
+        .attr('y', 60)
+
+      const sinePath = svg.insert('g')
+        .attr('transform', `translate(0, 90)`)
+        .insert('path')
+          .attr('fill', 'none')
+          .attr('stroke', '#E91E63')
+          .attr('stroke-width', 1.5)
+          .attr('vector-effect', 'non-scaling-stroke')
+
+      const cosinePath = svg.insert('g')
+        .attr('transform', `translate(0, 90)`)
+        .insert('path')
+          .attr('fill', 'none')
+          .attr('stroke', '#E91E63')
+          .attr('stroke-width', 1.5)
+          .attr('vector-effect', 'non-scaling-stroke')
+
+      svg.append('text')
+        .attr('class', 'signal-label')
+        .text('probe')
+        .attr('x', 30)
+        .attr('y', 120)
+
+      const sineTransformPath = svg.insert('path', 'g')
+        .attr('transform', `translate(0, 180)`)
+        .attr('fill', '#FFE0B2')
+
+      const cosineTransformPath = svg.insert('path', 'g')
+        .attr('transform', `translate(0, 250)`)
+        .attr('fill', '#FFE0B2')
+
+      svg.append('text')
+        .attr('class', 'signal-label')
+        .text('sine')
+        .attr('x', 30)
+        .attr('y', 210)
+
+      svg.append('text')
+        .attr('class', 'signal-label')
+        .text('cosine')
+        .attr('x', 30)
+        .attr('y', 280)
+
+      return {
+        svg,
+        update: ({targetSignal, frequency}) => {
+          const sine = sinusoid(frequency)
+          const cosine = sinusoid(frequency, Math.PI/2)
+          const sineTransform = (t) => targetSignal(t) * sine(t)
+          const cosineTransform = (t) => targetSignal(t) * cosine(t)
+
+          const result = [
+            d3.fsum(range, (t) => cosineTransform(t)),
+            d3.fsum(range, (t) => sineTransform(t)),
+          ]
+
+          targetPath.attr('d', line(targetSignal)(range))
+          sinePath.attr('d', line(sine)(range))
+          cosinePath.attr('d', line(cosine)(range))
+          sineTransformPath.attr('d', area(sineTransform)(range))
+          cosineTransformPath.attr('d', area(cosineTransform)(range))
+
+          return result
+        }
+      }
+    }
+
+    const createUnitCircle = ({enableTransitions} = {enableTransitions:true}) => {
       const width = 180
       const height = 180
       const svg = createSVG(width, height)
@@ -321,7 +432,6 @@
         .attr('stroke', '#FF9800')
         .attr('x1', x(0))
         .attr('y1', y(0))
-        .attr('x2', x(0))
         .attr('y2', y(0))
 
       const sinBar = svg.append('line')
@@ -331,7 +441,6 @@
         .attr('x1', x(0))
         .attr('y1', y(0))
         .attr('x2', x(0))
-        .attr('y2', y(0))
 
       const distance = svg.append('line')
         .attr('stroke-width', 2)
@@ -342,13 +451,20 @@
         .attr('x2', x(0))
         .attr('y2', y(0))
 
-      const arc = d3.arc()
-        .innerRadius(0)
+      const arc = d3.arc().innerRadius(0)
 
       const update = (cos, sin) => {
-        cosBar.transition().attr('x2', x(cos))
-        sinBar.transition().attr('y2', y(sin))
-        distance.transition().attr('x2', x(cos)).attr('y2', y(sin))
+        const alreadyDrawn = cosBar.attr('x2')
+
+        if (enableTransitions && alreadyDrawn) {
+          cosBar.transition().attr('x2', x(cos))
+          sinBar.transition().attr('y2', y(sin))
+          distance.transition().attr('x2', x(cos)).attr('y2', y(sin))
+        } else {
+          cosBar.attr('x2', x(cos))
+          sinBar.attr('y2', y(sin))
+          distance.attr('x2', x(cos)).attr('y2', y(sin))
+        }
 
         const dx = Math.abs(x(cos) - x(0))
         const dy = Math.abs(y(sin) - y(0))
@@ -357,11 +473,15 @@
           .startAngle(Math.PI/2)
           .endAngle(Math.PI/2 - Math.atan2(sin, cos))
           .outerRadius(Math.min(40, 0.8 * Math.sqrt(dx*dx + dy*dy)))
-        arcPath
-          .attr('d', arc())
-          .attr('opacity', 0)
-          .transition()
-          .attr('opacity', 1)
+
+        arcPath.attr('d', arc())
+
+        if (enableTransitions && alreadyDrawn) {
+          arcPath
+            .attr('opacity', 0)
+            .transition()
+            .attr('opacity', 1)
+        }
       }
 
       return {
@@ -579,6 +699,7 @@
     - cannot correctly reproduce discontinuous signals (but good enough when band limited?)
     - sines have no special connection to real-word phenomena -> sound waves are not made out of sines as a real-world phenomena!
 
+    - sine waves periodic and repeat from the beginning every one turn around the circle = 2π
 
   * Fourier formula
   * DFT formula
@@ -643,12 +764,11 @@
     const frequency = Number(inputFreq.value)
     const amplitude = Number(inputAmp.value)
     const targetSignal = sinusoid(4, 0, amplitude)
-    plot.update({
+    const [result, _] = plot.update({
       frequency,
       targetSignal,
       showSine: true,
     })
-    const [result, _] = plot.result()
     freqLabel.innerText = `${frequency}Hz`
     inputAmpLabel.innerText = amplitude
     resultLabel.innerText = `sine transform magnitude = ${result.toFixed(2)}`
@@ -665,7 +785,9 @@
 <p> Why can't we match the signal?
 The sine probe is out of phase with the target signal and won't correlate</p>
 
-<p> Let's try using a cosine transform to probe ...notice we're also getting a DC offset (explain)
+<p> Let's try moving  our sinewave back also by a quarter of a turn, this now gets us a cosine transform, and it matches
+the target wave perfectly  ...notice we're also getting a DC offset, the transform for 0Hz is a replica of the original wave.
+in this demo the offset has a magnitude of 1. all the other frequencies we are probing for (analysing) have this same offset.
 </p>
 
 <figure id="example-2" class="example-plot example-inset-70"><!-- interactive demo --></figure>
@@ -694,13 +816,12 @@ The sine probe is out of phase with the target signal and won't correlate</p>
 
   const drawExample = () => {
     const frequency = Number(freqInput.value)
-    plot.update({
+    const [sineResult, cosineResult] = plot.update({
       frequency,
       targetSignal,
       showSine: typeInput.value === 'sine',
       showCosine: typeInput.value === 'cosine',
     })
-    const [sineResult, cosineResult] = plot.result()
     freqLabel.innerText = `${frequency}Hz`
     if (typeInput.value === 'sine') {
       resultLabel.innerText = `sine transform magnitude = ${sineResult.toFixed(2)}`
@@ -718,17 +839,20 @@ The sine probe is out of phase with the target signal and won't correlate</p>
 
 <h3>Probing with sin & cos = Fourier transform</h3>
 
+<p>https://en.wikipedia.org/wiki/Fourier_transform</p>
 <p> Let's try combining the sine & cosine transform in our analysis</p>
 
-- we are now dealing with two numbers... you can notice both match partially, from this we can construct a complete match
+- we are now dealing with two numbers... you can notice both match partially, from this we can construct a complete match, because
+sine waves are periodic and repeat from the beginning every 2π (full turn)... any movement in phase of the sinusoid will reflect in the sine and cosine components
 
 - we don't need any more sinusoids to cover the rest of the quadrants, since the next two sinusoids (apart by π/2) would just be the negatives of our sin/cos probes
+
 
 
 <br><code> sin(π) = -sin(0) &  cos(3π/4) = -cos(0)</code>
 
 <p> from the ratio of our sine and cosine matches we can figure out the actual phase and magnitude (as if we were using a sinusoid of that phase).
-<p> magnitude is just the length of the diagonal line, which is equal to sqrt(sin<sup>2</sup> + cos<sup>2</sup>) </p>
+<p> magnitude is just the length of the diagonal line, which is equal to <code>sqrt(sin<sup>2</sup> + cos<sup>2</sup>) </code></p>
 
 </p>
 
@@ -746,7 +870,6 @@ The sine probe is out of phase with the target signal and won't correlate</p>
 </div>
 <pre><output id="example-3-result"></output></pre>
 
-
 <script>(() => {
   const targetSignal = sinusoid(4, Math.PI/4)
   const freqInput = document.getElementById('example-3-freq-input')
@@ -761,14 +884,13 @@ The sine probe is out of phase with the target signal and won't correlate</p>
 
   const drawExample = () => {
     const frequency = Number(freqInput.value)
-    plot.update({
+
+    const [sineResult, cosineResult] = plot.update({
       targetSignal,
       frequency,
       showSine: true,
       showCosine: true,
     })
-
-    const [sineResult, cosineResult] = plot.result()
 
     circle.update(cosineResult, sineResult)
     freqLabel.innerText = `${frequency}Hz`
@@ -779,9 +901,43 @@ The sine probe is out of phase with the target signal and won't correlate</p>
   drawExample()
 })()</script>
 
+<h3>Phase</h3>
+
+<p>Let's make the frequency set in stone as 4Hz and just look at the phase of the signal.
+<p>Drag the target sine wave left and right. Notice that our sine & cosine probes give a match for any phase in-between</p>
+
+<figure id="example-31" class="example-plot example-inset-70"><!-- interactive demo --></figure>
+<figure id="example-311"><!-- interactive demo --></figure>
+
+<script>(() => {
+  const frequency = 4
+  let phase = Math.PI/4
+  let targetSignal = sinusoid(frequency, phase)
+
+  const onPhaseChange = (delta) => {
+    phase -= delta * 8 * Math.PI
+    targetSignal = sinusoid(frequency, phase)
+    draw()
+  }
+
+  const plot = createPhaseDemoPlot({domain: [0, 1], step: 0.01, onPhaseChange})
+  document.querySelector('#example-31').appendChild(plot.svg.node())
+
+  const circle = createUnitCircle({enableTransitions: false})
+  document.querySelector('#example-311').appendChild(circle.svg.node())
+
+  const draw = () => {
+    const [cosineResult, sineResult] = plot.update({targetSignal, frequency})
+    circle.update(cosineResult, sineResult)
+  }
+  draw()
+
+})()</script>
+
+
 <h3>Sin/cos probes and their negatives</h3>
 
-<figure id="example-31" class="example-plot"><!-- interactive demo --></figure>
+<figure id="example-32" class="example-plot"><!-- interactive demo --></figure>
 
 <script>(() => {
 
@@ -824,7 +980,7 @@ svg.insert('path', 'g')
   .attr('d', line(sinusoid(frequency, Math.PI))(range))
 
 
-document.querySelector('#example-31').appendChild(svg.node())
+document.querySelector('#example-32').appendChild(svg.node())
 })()</script>
 
 
@@ -838,6 +994,8 @@ document.querySelector('#example-31').appendChild(svg.node())
   - notice that the 0Hz band for cosine produces an average of the signal
   - notice that when choosing quarter of Hertz resolution the 3.75Hz frequency bar appears stronger
     than the 4Hz bar, event though it's a 4Hz component (phase is π)
+
+  - we introduce a frequency plot that shows a bar for each analysis sinusoid /  probe
 </pre>
 
 
@@ -892,15 +1050,13 @@ document.querySelector('#example-31').appendChild(svg.node())
 
   const drawExample = () => {
     const step = Number(stepInput.value)
-    plot.update({
+    const [sineResult, cosineResult] = plot.update({
       targetSignal,
       frequency,
       showSine: true,
       showCosine: true,
     })
     freqPlot.update(analysis, step, frequency)
-
-    const [sineResult, cosineResult] = plot.result()
     circle.update(cosineResult, sineResult)
   }
 
@@ -915,7 +1071,7 @@ document.querySelector('#example-31').appendChild(svg.node())
 
 <h3>Spectral leakage</h3>
 <p> what happens if we analyze in-between frequencies</p>
-<p> same plots but there is one frequency that's 4.5 Hz or something</p>
+<p> same plots but there is one frequency that's 3.5 Hz with phase π/3</p>
 <p> We can see that for non-integer frequencies we get spill over into adjacent buckets.
 we can recognize that the actual peak is somewhere between 4Hz & 5Hz by interpolating.
 we can also increase the number of bins by creating more granular sinusoid probes for analyzing</p>
@@ -967,7 +1123,7 @@ we can also increase the number of bins by creating more granular sinusoid probe
   const drawExample = () => {
     const step = Number(stepInput.value)
 
-    plot.update({
+    const [sineResult, cosineResult] = plot.update({
       targetSignal,
       frequency,
       showSine: true,
@@ -975,7 +1131,6 @@ we can also increase the number of bins by creating more granular sinusoid probe
     })
     freqPlot.update(analysis, step, frequency)
 
-    const [sineResult, cosineResult] = plot.result()
     circle.update(cosineResult, sineResult)
   }
   d3.select(stepInput).on('input', drawExample)
@@ -1057,10 +1212,11 @@ mention "octopus" like shape of freq. spectrum
 <h3>Complex numbers </h3>
 
 <br>
-Just a convenient math way to write sin/cos
 
+<code> cost(t) - i &times; sin(t)</code>
+Just a convenient math way to write sin/cos in a single math expression.
 
-sin cos pair need to be separated somehow in a convenient math expression, ergo multiply sin component by the imaginary number
+The sine/cosine components need to be presented somehow in a single math expression, ergo multiply sin component by the imaginary number
 real & imaginary don't mix.
 
 
