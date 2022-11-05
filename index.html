@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Intuitive intro to sound analysis</title>
+  <title>Draft: Demystifying Fourier analysis</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
@@ -14,20 +14,41 @@
       margin-left: -25px;
     }
 
+    .example-inset-70 {
+      width: 850px;
+      margin-left: -70px;
+    }
+
+    .example-inset-40 {
+      width: 820px;
+      margin-left: -40px;
+    }
+
     .example-plot svg {
       display: block;
       flex-grow: 1;
       flex-shrink: 0;
     }
 
+    .example-grid {
+      display: grid;
+      grid-template-columns: auto auto;
+      grid-template-rows: auto auto;
+    }
+    .example-grid > :first-child {
+      grid-column: span 2;
+    }
+
+
     .range-slider {
-      display: flex;
+      display: inline-flex;
       gap: 10px;
       position: relative;
       align-items: center;
+      margin-bottom: 0.5rem;
     }
 
-    .range-slider input {
+    .range-slider input, .range-slider select {
       margin-bottom: 0;
     }
 
@@ -37,11 +58,14 @@
       min-width: 50px;
       line-height: 20px;
       text-align: center;
-      border-radius: 3px;
-      background: #CFD8DC;
-      padding: 5px 10px;
+      border-radius: 4px;
+      background: #F6F8FA;
+      padding: 3px 6px;
       margin-left: 8px;
       margin-bottom: 0;
+      border: 1px solid #E5E7EB;
+      border-bottom: 3px solid #E5E7EB;
+      font-size: 0.9rem;
     }
     .range-slider output::after {
       position: absolute;
@@ -50,16 +74,30 @@
       width: 0;
       height: 0;
       border-top: 7px solid transparent;
-      border-right: 7px solid #CFD8DC;
+      border-right: 7px solid #E5E7EB;
       border-bottom: 7px solid transparent;
       content: '';
     }
 
     .signal-label {
-      fill: #37474F;
-      font-size: 0.8rem;
+      fill: #546E7A;
+      font-size: 0.7rem;
       text-anchor: middle;
     }
+
+    .circle-label {
+      fill: #90A4AE;
+      font-family: cursive;
+      font-size: 0.9rem;
+      text-anchor: middle;
+    }
+
+    .flex-row {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+
   </style>
   <script>
     const sinusoid = (frequency, phase = 0, amplitude = 1) => (
@@ -72,21 +110,19 @@
 
     const magnitude = ([a, b]) => Math.sqrt(a * a + b * b)
 
-
     const createSVG = (width, height) => {
       const svg = d3.create('svg')
       svg
         .attr('width', width)
-        .attr('height', height)
         .attr('viewBox', [0, 0, width, height])
       return svg
     }
 
     const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
 
-    const createSignalPlot = ({domain, step }) => {
-      const width = 800
-      const height = 300
+    const createSignalPlot = ({domain, step, single}) => {
+      const width = 820
+      const height = single ? 250 : 320
       const marginLeft = 70
       const svg = createSVG(width, height)
 
@@ -95,7 +131,7 @@
         .insert('path')
           .attr('fill', 'none')
           .attr('stroke', '#29B6F6')
-          .attr('stroke-width', 3)
+          .attr('stroke-width', 2.5)
 
       svg.append('text')
         .attr('class', 'signal-label')
@@ -160,6 +196,7 @@
             cosineTransform ? d3.fsum(range, (t) => cosineTransform(t)) : undefined,
           ]
           targetPath
+            .transition()
             .attr('d', line(targetSignal)(range))
 
           sinePath.attr('visibility', showSine ? 'visible' : 'hidden')
@@ -235,11 +272,11 @@
     }
 
     const createUnitCircle = () => {
-      const width = 300
-      const height = 300
+      const width = 180
+      const height = 180
       const svg = createSVG(width, height)
-      const x = d3.scaleLinear().domain([-70, 70]).range([0, width])
-      const y = d3.scaleLinear().domain([70, -70]).range([0, height])
+      const x = d3.scaleLinear().domain([-65, 65]).range([0, width])
+      const y = d3.scaleLinear().domain([65, -65]).range([0, height])
 
       svg.append('ellipse')
         .attr('cx', x(0))
@@ -251,35 +288,41 @@
         .attr('stroke-dasharray', '3 2')
 
       svg.append('g')
-        .attr('transform', 'translate(' + [0, y(0)] + ')')
+        .attr('transform', `translate(${[0, y(0)]})`)
         .call(d3.axisBottom(x).ticks(2))
+
       svg.append('text')
         .text('cos')
-        .attr('x', 270)
-        .attr('y', 170)
+        .attr('x', x(50))
+        .attr('y', y(0))
+        .attr('dx', 12)
+        .attr('dy', -5)
+        .attr('class', 'circle-label')
 
       svg.append('g')
-        .attr('transform', 'translate(' + [x(0), 0] + ')')
+        .attr('transform', `translate(${[x(0), 0]})`)
         .call(d3.axisLeft(y).ticks(2))
       svg.append('text')
         .text('sin')
-        .attr('x', 270)
-        .attr('y', 170)
-        .style('transform-origin', 'center')
-        .style('transform', 'rotate(-90deg)')
+        .attr('x', x(0))
+        .attr('y', y(50))
+        .attr('dy', -5)
+        .attr('dx', 12)
+        .attr('class', 'circle-label')
 
       const arcPath = svg.insert('path', 'g')
-        .style('transform', 'translate(150px, 150px)')
+        .attr('transform', `translate(${[x(0), y(0)]})`)
         .attr('fill', '#FFF3E0')
         .attr('stroke', '#FFCC80')
 
       const cosBar = svg.append('line')
-        .attr('x1', x(0))
-        .attr('y1', y(0))
-        .attr('y2', y(0))
         .attr('stroke-width', 3)
         .attr('stroke-linecap', 'round')
         .attr('stroke', '#FF9800')
+        .attr('x1', x(0))
+        .attr('y1', y(0))
+        .attr('x2', x(0))
+        .attr('y2', y(0))
 
       const sinBar = svg.append('line')
         .attr('stroke-width', 3)
@@ -288,6 +331,7 @@
         .attr('x1', x(0))
         .attr('y1', y(0))
         .attr('x2', x(0))
+        .attr('y2', y(0))
 
       const distance = svg.append('line')
         .attr('stroke-width', 2)
@@ -295,14 +339,16 @@
         .attr('stroke', '#FF9800')
         .attr('x1', x(0))
         .attr('y1', y(0))
+        .attr('x2', x(0))
+        .attr('y2', y(0))
 
       const arc = d3.arc()
         .innerRadius(0)
 
       const update = (cos, sin) => {
-        cosBar.attr('x2', x(cos))
-        sinBar.attr('y2', y(sin))
-        distance.attr('x2', x(cos)).attr('y2', y(sin))
+        cosBar.transition().attr('x2', x(cos))
+        sinBar.transition().attr('y2', y(sin))
+        distance.transition().attr('x2', x(cos)).attr('y2', y(sin))
 
         const dx = Math.abs(x(cos) - x(0))
         const dy = Math.abs(y(sin) - y(0))
@@ -311,7 +357,11 @@
           .startAngle(Math.PI/2)
           .endAngle(Math.PI/2 - Math.atan2(sin, cos))
           .outerRadius(Math.min(40, 0.8 * Math.sqrt(dx*dx + dy*dy)))
-        arcPath.attr('d', arc())
+        arcPath
+          .attr('d', arc())
+          .attr('opacity', 0)
+          .transition()
+          .attr('opacity', 1)
       }
 
       return {
@@ -320,11 +370,11 @@
       }
     }
 
-    const createFreqPlot = ({ domain, onBinSelected }) => {
+    const createFreqBarPlot = ({ domain, onBinSelected }) => {
       const height = 200
-      const width = 800
+      const width = 670
       const svg = createSVG(width, height)
-      const margin = { top: 20, right: 30, bottom: 30, left: 40 }
+      const margin = { top: 20, right: 20, bottom: 30, left: 70 }
 
       const barBand = d3.scaleBand()
         .range([margin.left, width - margin.right])
@@ -361,17 +411,20 @@
         svg,
         update: (analysis, step, freq) => {
           const range = d3.range(domain[0], domain[1]+step, step)
+          const data = range.map(d => analysis(d))
+
           barBand.domain(range)
           binBand.domain(range)
+
           xAxis.call(d3.axisBottom(barBand).tickValues(barBand.domain().filter((d) => Number.isInteger(d))))
 
           bars.selectAll('rect')
-            .data(range)
+            .data(data)
             .join('rect')
               .attr('fill', '#FFE0B2')
-              .attr('x', d => barBand(d) + 0.2 * barBand.bandwidth())
-              .attr('y', d => y(analysis(d)))
-              .attr('height', d => y(0) - y(analysis(d)))
+              .attr('x', (d,i) => barBand(range[i]) + 0.2 * barBand.bandwidth())
+              .attr('y', d => y(d))
+              .attr('height', d => y(0) - y(d))
               .attr('width', 0.6 * barBand.bandwidth())
 
           binLines.selectAll('line')
@@ -396,22 +449,21 @@
           const transition = selectedBin.attr('x')
             ? selectedBin.transition().duration(150)
             : selectedBin
+
           transition
             .attr('width', binBand.bandwidth())
-            .attr('x', binBand(freq))
+            .attr('x', binBand(freq) ?? binBand(0))
         }
       }
     }
 
-
     const createLinePlot = ({step, domain}) => {
       const width = 800
-      const height = 300
+      const height = 200
       const svg = createSVG(width, height)
 
       const margin = { top: 20, right: 30, bottom: 30, left: 40 }
       const range = d3.range(domain[0], domain[1]+step, step)
-      const data = range
 
       const x = d3.scaleLinear()
         .range([margin.left, width - margin.right])
@@ -442,7 +494,7 @@
         .x(x)
 
       const linePath = svg.insert('path', 'g')
-        .datum(data)
+        .datum(range)
         .attr('clip-path', 'url(#clip)')
         .attr('fill', 'none')
         .attr('stroke', '#29B6F6')
@@ -465,7 +517,7 @@
 
     const createAreaPlot = ({domain}) => {
       const width = 800
-      const height = 300
+      const height = 200
       const svg = createSVG(width, height)
 
       const margin = { top: 20, right: 30, bottom: 30, left: 40 }
@@ -487,13 +539,12 @@
         .x(x)
         .y0(y(0))
 
-      const areaPath = svg.insert('path', 'g')
-        .attr('fill', '#7986CB')
+      const areaPath = svg.insert('path', 'g').attr('fill', '#7986CB')
 
       return {
         svg,
         update: ({func, step}) => {
-          const result = range.map(t => func(t))
+          const result = range.map(func)
           const max = d3.max(result)
 
           xAxis.call(d3.axisBottom(x).ticks(15))
@@ -514,7 +565,7 @@
 
 <body>
 
-<h1>Intuitive intro to sound analysis</h1>
+<h1>Draft: Demystifying Fourier analysis</h1>
 
 <p>
 <pre>
@@ -541,14 +592,17 @@
 
 <h2>Probing with a single sinewave - fixed phase </h2>
 
-<img src="https://i.imgflip.com/gkh5g.jpg" />
+<p style="text-align: center;">
+  <img src="https://i.imgflip.com/gkh5g.jpg" alt="Let the probing... Begin!"/>
+</p>
 
-<p>probing with a single sinewave - fixed phase (Fourier sine transform )</p>
+<p>probing with a single sinewave with fixed phase, we won't slide it left or right, just change the frequency</p>
 <p> https://en.wikipedia.org/wiki/Sine_and_cosine_transforms </p>
+<p>the idea is to multiply the signal with a pure sinewave, this basically tells us how closely the signal matches our test sinewave</p>
+<p><code> transform = probe &times; target signal </code></p>
+<p><code> f(t) * sin(2πft) dt </code></p>
 
-<p><pre> f(t) * sin(2πft) dt </pre></p>
-
-<p>example 4Hz sinewave </p>
+<p>example 4Hz sinewave</p>
 
 <p>
   the resulting transform is the area<br>
@@ -558,28 +612,37 @@
 
  </p>
 
-<div id="example-1" class="example-plot">
-  <!-- interactive demo -->
-</div>
+<figure id="example-1" class="example-plot example-inset-70"><!-- interactive demo --></figure>
 
 <div class="range-slider">
-  <input id="example-1-control" type="range" value=0 min=0 max=10 step=1>
+  <label style="width:250px">Sine frequency</label>
+  <input id="example-1-control" type="range" value=0 min=0 max=8 step=1>
   <output id="example-1-freq"></output>
 </div>
 
-<output id="example-1-result"></output>
+<div class="range-slider">
+  <label style="width:250px">Target signal amplitude</label>
+  <input id="example-1-amplitude" type="range" value=1 min=0 max=2 step=0.2 />
+  <output id="example-1-amplitude-label"></output>
+</div>
+<pre>
+  <output id="example-1-result"></output>
+</pre>
 
 <script>(() => {
-  const targetSignal = sinusoid(4)
-  const plot = createSignalPlot({domain: [0, 1], step: 0.01})
+  const plot = createSignalPlot({domain: [0, 1], step: 0.01, single: true})
   document.querySelector('#example-1').appendChild(plot.svg.node())
 
-  const input = document.getElementById('example-1-control')
+  const inputFreq = document.getElementById('example-1-control')
+  const inputAmp = document.getElementById('example-1-amplitude')
+  const inputAmpLabel = document.getElementById('example-1-amplitude-label')
   const freqLabel = document.getElementById('example-1-freq')
   const resultLabel = document.getElementById('example-1-result')
 
   const drawExample = () => {
-    const frequency = Number(input.value)
+    const frequency = Number(inputFreq.value)
+    const amplitude = Number(inputAmp.value)
+    const targetSignal = sinusoid(4, 0, amplitude)
     plot.update({
       frequency,
       targetSignal,
@@ -587,9 +650,10 @@
     })
     const [result, _] = plot.result()
     freqLabel.innerText = `${frequency}Hz`
-    resultLabel.innerText = `sine transform=${result.toFixed(2)} (${result})`
+    inputAmpLabel.innerText = amplitude
+    resultLabel.innerText = `sine transform magnitude = ${result.toFixed(2)}`
   }
-  d3.select(input).on('input', drawExample)
+  d3.selectAll([inputFreq, inputAmp]).on('input', drawExample)
   drawExample()
 
 })()</script>
@@ -598,31 +662,29 @@
 <h3>Probing and phase</h3>
 
 <p>The signal is still 4Hz but offset by a quarter of a turn (phase π/2) </p>
-<p> Why can't we match the signal?</p>
+<p> Why can't we match the signal?
+The sine probe is out of phase with the target signal and won't correlate</p>
 
-<p> Let's try using a cosine transform to probe ... notice we're also getting some noise  (non-zero results for non-matching frequencies)
+<p> Let's try using a cosine transform to probe ...notice we're also getting a DC offset (explain)
 </p>
 
-<div id="example-2" class="example-plot">
-  <!-- interactive demo -->
-</div>
-<p>
-  <label>Probe type</label>
+<figure id="example-2" class="example-plot example-inset-70"><!-- interactive demo --></figure>
+
+<div class="range-slider">
   <select id="example-2-transform-type">
     <option value="sine">Sine</option>
     <option value="cosine">Cosine</option>
   </select>
-</p>
-<div class="range-slider">
-  <input id="example-2-freq-input"  type="range" value=0 min=0 max=10 step=1>
+  <input id="example-2-freq-input"  type="range" value=0 min=0 max=8 step=1>
   <output id="example-2-freq-label"></output>
 </div>
-<output id="example-2-result"></output>
-
+<pre>
+  <output id="example-2-result"></output>
+</pre>
 <script>(() => {
   const targetSignal = sinusoid(4, Math.PI/2)
 
-  const plot = createSignalPlot({domain: [0, 1], step: 0.01})
+  const plot = createSignalPlot({domain: [0, 1], step: 0.01, single: true})
   document.querySelector('#example-2').appendChild(plot.svg.node())
 
   const typeInput = document.getElementById('example-2-transform-type')
@@ -638,9 +700,13 @@
       showSine: typeInput.value === 'sine',
       showCosine: typeInput.value === 'cosine',
     })
-    const [result, _] = plot.result()
+    const [sineResult, cosineResult] = plot.result()
     freqLabel.innerText = `${frequency}Hz`
-    resultLabel.innerText = `${frequency}Hz, sine transform=${result.toFixed(2)} (${result})`
+    if (typeInput.value === 'sine') {
+      resultLabel.innerText = `sine transform magnitude = ${sineResult.toFixed(2)}`
+    } else {
+      resultLabel.innerText = `cosine transform magnitude = ${cosineResult.toFixed(2)}`
+    }
   }
 
   d3.selectAll([typeInput, freqInput]).on('input', drawExample)
@@ -667,18 +733,19 @@
 </p>
 
 
+<figure id="example-3-signal-plot" class="example-plot example-inset-70"><!-- interactive demo --></figure>
 
-<div id="example-3" class="example-plot">
-  <div id="example-3-signal-plot"></div>
-  <div id="example-3-xy-plot-"></div>
+<div class="flex-row">
+  <div>
+    <div class="range-slider">
+      <input id="example-3-freq-input"  type="range" value=0 min=0 max=8 step=1>
+      <output id="example-3-freq-label"></output>
+    </div>
+  </div>
+  <figure id="example-3-xy-plot"><!-- interactive demo --></figure>
 </div>
+<pre><output id="example-3-result"></output></pre>
 
-<div class="range-slider">
-  <input id="example-3-freq-input"  type="range" value=0 min=0 max=10 step=1>
-  <output id="example-3-freq-label"></output>
-</div>
-
-<output id="example-3-result"></output>
 
 <script>(() => {
   const targetSignal = sinusoid(4, Math.PI/4)
@@ -690,7 +757,7 @@
   document.querySelector('#example-3-signal-plot').appendChild(plot.svg.node())
 
   const circle = createUnitCircle()
-  document.querySelector('#example-3-signal-plot').appendChild(circle.svg.node())
+  document.querySelector('#example-3-xy-plot').appendChild(circle.svg.node())
 
   const drawExample = () => {
     const frequency = Number(freqInput.value)
@@ -705,10 +772,8 @@
 
     circle.update(cosineResult, sineResult)
     freqLabel.innerText = `${frequency}Hz`
-    resultLabel.innerText = `
-      transform=(${sineResult.toFixed(2)}, ${cosineResult.toFixed(2)})
-      magnitude=${magnitude([sineResult, cosineResult]).toFixed(2)}
-    `
+    resultLabel.innerText = `transform = [${sineResult.toFixed(2)}, ${cosineResult.toFixed(2)}] \
+      \nmagnitude = ${magnitude([sineResult, cosineResult]).toFixed(2)}`
   }
   d3.select(freqInput).on('input', drawExample)
   drawExample()
@@ -716,18 +781,18 @@
 
 <h3>Sin/cos probes and their negatives</h3>
 
-<div id="example-31" class="example-plot">
-</div>
+<figure id="example-31" class="example-plot"><!-- interactive demo --></figure>
+
 <script>(() => {
 
-const height = 200
+const height = 150
 const width = 800
 const domain = [0, 1]
 const step = 0.01
 const frequency = 1
 const svg = createSVG(width, height)
 const range = d3.range(domain[0], domain[1]+step, step)
-const x = d3.scaleLinear().domain(domain).range([10, width-10])
+const x = d3.scaleLinear().domain(domain).range([30, width-30])
 const y = d3.scaleLinear().domain([1, -1]).range([10, height-10])
 
 const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
@@ -763,7 +828,7 @@ document.querySelector('#example-31').appendChild(svg.node())
 })()</script>
 
 
-<h2>Fourier analysis</h2>
+<h2>Analyzing a complex wave</h2>
 
 
 <pre>
@@ -771,12 +836,14 @@ document.querySelector('#example-31').appendChild(svg.node())
   - frequency graph with bins shows magnitudes for all probed frequencies
 
   - notice that the 0Hz band for cosine produces an average of the signal
+  - notice that when choosing quarter of Hertz resolution the 3.75Hz frequency bar appears stronger
+    than the 4Hz bar, event though it's a 4Hz component (phase is π)
 </pre>
 
 
-<div id="example-4" class="example-plot">
-  <!-- interactive demo -->
-</div>
+<figure id="example-4" class="example-plot example-grid example-inset-70"><!-- interactive demo --></figure>
+
+<label>Granularity</label>
 <select id="example-4-step">
   <option value="1">1Hz</option>
   <option value="0.5">0.5Hz</option>
@@ -796,15 +863,18 @@ document.querySelector('#example-31').appendChild(svg.node())
   const plot = createSignalPlot({domain, step})
   document.querySelector('#example-4').appendChild(plot.svg.node())
 
+  const freqPlot = createFreqBarPlot({domain: [0, 8], onBinSelected})
+  document.querySelector('#example-4').appendChild(freqPlot.svg.node())
+
   const circle = createUnitCircle()
   document.querySelector('#example-4').appendChild(circle.svg.node())
 
   const stepInput = document.querySelector('#example-4-step')
 
   const components = [
-    sinusoid(2),
+    sinusoid(2, Math.PI/3),
     sinusoid(4, Math.PI, 0.5),
-    sinusoid(7, Math.PI/4, 0.3)
+    sinusoid(7, Math.PI/4, 0.25)
   ]
   const targetSignal = combine(...components)
 
@@ -813,16 +883,12 @@ document.querySelector('#example-31').appendChild(svg.node())
     const cosine = sinusoid(frequency, Math.PI / 2)
     // naive DFT
     const complex = [0, 0]
-    for (const t of d3.range(domain[0], domain[1]+step, step)) {
+    for (const [i, t] of d3.range(domain[0], domain[1]+step, step).entries()) {
       complex[0] += targetSignal(t) * cosine(t),
       complex[1] -= targetSignal(t) * sine(t)
     }
     return magnitude(complex)
   }
-
-  const freqPlot = createFreqPlot({domain: [0, 10], onBinSelected})
-  document.querySelector('#example-4').appendChild(freqPlot.svg.node())
-
 
   const drawExample = () => {
     const step = Number(stepInput.value)
@@ -850,13 +916,13 @@ document.querySelector('#example-31').appendChild(svg.node())
 <h3>Spectral leakage</h3>
 <p> what happens if we analyze in-between frequencies</p>
 <p> same plots but there is one frequency that's 4.5 Hz or something</p>
-<p> We can see that for non-integer frequencies we get spill over into adjacent buckets, the
-by interpolating we can recognize that the actual peak is somewhere between 4Hz & 5Hz</p>
+<p> We can see that for non-integer frequencies we get spill over into adjacent buckets.
+we can recognize that the actual peak is somewhere between 4Hz & 5Hz by interpolating.
+we can also increase the number of bins by creating more granular sinusoid probes for analyzing</p>
 
-<div id="example-5" class="example-plot">
-  <!-- interactive demo -->
-</div>
+<figure id="example-5" class="example-plot example-grid example-inset-70"><!-- interactive demo --></figure>
 
+<label>Granularity</label>
 <select id="example-5-step">
   <option value="1">1Hz</option>
   <option value="0.5">0.5Hz</option>
@@ -876,12 +942,15 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
   const plot = createSignalPlot({domain, step})
   document.querySelector('#example-5').appendChild(plot.svg.node())
 
+  const freqPlot = createFreqBarPlot({domain: [0, 8], step: 1, onBinSelected})
+  document.querySelector('#example-5').appendChild(freqPlot.svg.node())
+
   const circle = createUnitCircle()
   document.querySelector('#example-5').appendChild(circle.svg.node())
 
   const stepInput = document.querySelector('#example-5-step')
 
-  const targetSignal = sinusoid(4.5, Math.PI / 3)
+  const targetSignal = sinusoid(3.5, Math.PI / 3)
 
   const analysis = (f) => {
     const sine = sinusoid(f)
@@ -894,9 +963,6 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
     }
     return magnitude(complex)
   }
-
-  const freqPlot = createFreqPlot({domain: [0, 10], step: 1, onBinSelected})
-  document.querySelector('#example-5').appendChild(freqPlot.svg.node())
 
   const drawExample = () => {
     const step = Number(stepInput.value)
@@ -920,14 +986,13 @@ by interpolating we can recognize that the actual peak is somewhere between 4Hz 
 
 
 
-<h3>Sinc function </h3>
+<h3>Sinc function & spectral resolution</h3>
 
 <p> <b>2.5Hz</b></p>
 
-<div id="example-6" class="example-plot">
-  <!-- interactive demo -->
-</div>
-<label>Size (time)</label>
+<figure id="example-6" class="example-plot example-inset-40"><!-- interactive demo --></figure>
+
+<label>Time window</label>
 <select id="example-6-select">
   <option value="1">1s</option>
   <option value="5">5s</option>
