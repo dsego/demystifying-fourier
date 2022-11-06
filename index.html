@@ -147,9 +147,9 @@
         .attr('transform', `translate(${marginLeft}, 30)`)
 
       const targetPath = g.insert('path')
-          .attr('fill', 'none')
-          .attr('stroke', '#29B6F6')
-          .attr('stroke-width', 2.5)
+        .attr('fill', 'none')
+        .attr('stroke', '#29B6F6')
+        .attr('stroke-width', 2.5)
 
       svg.append('text')
         .attr('class', 'signal-label')
@@ -276,7 +276,7 @@
     }
 
     const createPhaseDemoPlot = ({domain, onPhaseChange}) => {
-      const width = 820
+      const width = 620
       const height = 320
       const marginLeft = 70
 
@@ -354,7 +354,7 @@
 
       return {
         svg,
-        update: ({targetData, sineData, cosineData, sineTransformData, cosineTransformData}) => {
+        update: ({targetData, sineData, cosineData, sineTransformData, cosineTransformData, result}) => {
           const x = d3.scaleLinear().domain([0, targetData.length]).range([marginLeft, width])
           const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
 
@@ -364,8 +364,12 @@
           targetPath.attr('d', line(targetData))
           sinePath.attr('d', line(sineData))
           cosinePath.attr('d', line(cosineData))
-          sineTransformPath.attr('d', area(sineTransformData))
-          cosineTransformPath.attr('d', area(cosineTransformData))
+          sineTransformPath
+            .attr('d', area(sineTransformData))
+            // .attr('fill', color(Math.abs(result[1])))
+          cosineTransformPath
+            .attr('d', area(cosineTransformData))
+            // .attr('fill', color(Math.abs(result[0])))
         }
       }
     }
@@ -687,7 +691,7 @@
     - cannot correctly reproduce discontinuous signals (but good enough when band limited?)
     - sines have no special connection to real-word phenomena -> sound waves are not made out of sines as a real-world phenomena!
 
-    - sine waves periodic and repeat from the beginning every one turn around the circle = 2π
+    - sine waves periodic and repeat from the beginning every one turn around the circle, 360° or 2π radians
 
   * Fourier formula
   * DFT formula
@@ -965,8 +969,7 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
 <p>Let's make the frequency set in stone as 4Hz and just look at the phase of the signal.
 <p>Drag the target sine wave left and right. Notice that our sine & cosine probes give a match for any phase in-between</p>
 
-<figure id="example-31" class="example-plot example-inset-70"><!-- interactive demo --></figure>
-<figure id="example-311"><!-- interactive demo --></figure>
+<figure id="example-31" class="example-plot example-inset-70 flex-row"><!-- interactive demo --></figure>
 
 <script>(() => {
   const domain = [0, 1]
@@ -986,7 +989,7 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
   document.querySelector('#example-31').appendChild(plot.svg.node())
 
   const circle = createUnitCircle({enableTransitions: false})
-  document.querySelector('#example-311').appendChild(circle.svg.node())
+  document.querySelector('#example-31').appendChild(circle.svg.node())
 
   const sine = sinusoid(frequency)
   const cosine = sinusoid(frequency, Math.PI/2)
@@ -998,18 +1001,21 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
     const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
     const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
 
+    const result = [
+      d3.fsum(cosineTransformData),
+      d3.fsum(sineTransformData),
+    ]
+
     plot.update({
       targetData,
       sineData,
       cosineData,
       sineTransformData,
       cosineTransformData,
+      result
     })
 
-    circle.update(
-      d3.fsum(sineTransformData),
-      d3.fsum(cosineTransformData),
-    )
+    circle.update(result[0], result[1])
   }
   draw()
 
@@ -1261,9 +1267,7 @@ don't fit perfectly in the window and have some scrappy parts near each side of 
 lobes happens because we the transforms don't cancel out when they should because they are cut off at the ends.
 if we had an infinite window of time, all of these fake matches would cancel out and leave a pure spike for the probe that fully
 matches our sinusoid.
-<b> for perfect spectrum peak we need an infinite window!!!! </b>
-
-mention "octopus" like shape of freq. spectrum
+<b> for perfect spectrum peak we need an infinite window!!!! </b>, otherwise we get this "octopus" like shape on the freq. spectrum
 
 </p>
 
