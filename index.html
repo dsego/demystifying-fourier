@@ -110,6 +110,19 @@
 
     const magnitude = ([a, b]) => Math.sqrt(a * a + b * b)
 
+    // generate a single frequency analysis function (naive DFT)
+    const analysis = (range, signal) => (freq) => {
+      const sine = sinusoid(freq)
+      const cosine = sinusoid(freq, Math.PI/2)
+      const complex = [0, 0]
+      for (const t of range) {
+        complex[0] += signal(t) * cosine(t),
+        complex[1] -= signal(t) * sine(t)
+      }
+      return magnitude(complex)
+    }
+
+
     const createSVG = (width, height) => {
       const svg = d3.create('svg')
       svg
@@ -121,16 +134,10 @@
 
     const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
 
-    const createSignalPlot = ({domain, step, single}) => {
+    const createSignalPlot = ({single} = {}) => {
       const width = 820
       const height = single ? 250 : 320
       const marginLeft = 70
-
-      const range = d3.range(domain[0], domain[1]+step, step)
-      const x = d3.scaleLinear().domain(domain).range([0, width-marginLeft])
-      const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
-      const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
-      const area = (func) => d3.area().curve(d3.curveNatural).x(x).y0(y(0)).y1((t) => y(func(t)))
       let result = [0, 0]
       let prevFreq = 0
 
@@ -186,46 +193,41 @@
 
       return {
         svg,
-        update: ({ targetSignal, frequency, showSine, showCosine }) => {
-          const sine = sinusoid(frequency)
-          const cosine = sinusoid(frequency, Math.PI/2)
-          const sineTransform = (t) => targetSignal(t) * sine(t)
-          const cosineTransform = (t) => targetSignal(t) * cosine(t)
-
-          const result = [
-            d3.fsum(range, (t) => cosineTransform(t)),
-            d3.fsum(range, (t) => sineTransform(t)),
-          ]
+        update: ({targetData, frequency, sineData, cosineData, sineTransformData, cosineTransformData, result}) => {
+          const x = d3.scaleLinear().domain([0, targetData.length]).range([0, width-marginLeft])
+          const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
+          const line = d3.line().curve(d3.curveNatural).x((d, i) => x(i)).y((d) => y(d))
+          const area = d3.area().curve(d3.curveNatural).x((d, i) => x(i)).y0(y(0)).y1((d) => y(d))
 
           targetPath
             .transition()
-            .attr('d', line(targetSignal)(range))
+            .attr('d', line(targetData))
 
-          sinePath.attr('visibility', showSine ? 'visible' : 'hidden')
-          cosinePath.attr('visibility', showCosine ? 'visible' : 'hidden')
-          transformLabel.attr('y', showCosine && showSine ? 240 : 210)
+          sinePath.attr('visibility', sineData ? 'visible' : 'hidden')
+          cosinePath.attr('visibility', cosineData ? 'visible' : 'hidden')
+          transformLabel.attr('y', sineData && cosineData ? 240 : 210)
 
           // morph from flat line into sine/cosine
-          if (frequency == 0 || prevFreq == 0) {
+          if (frequency == 0 || prevFreq == 0 || prevFreq == frequency) {
             sinePath
               .transition()
-              .attr('d', line(sine)(range))
+              .attr('d', line(sineData ?? []))
 
             cosinePath
               .transition()
-              .attr('d', line(cosine)(range))
+              .attr('d', line(cosineData ?? []))
 
           // pre-stretch the plot before transitioning to higher frequency
           } else if (frequency > prevFreq) {
             const scale = frequency / prevFreq
             sinePath
-              .attr('d', line(sine)(range))
+              .attr('d', line(sineData ?? []))
               .attr('transform', `scale(${scale} 1)`)
               .transition()
               .attr('transform', `scale(1 1)`)
 
             cosinePath
-              .attr('d', line(cosine)(range))
+              .attr('d', line(cosineData ?? []))
               .attr('transform', `scale(${scale} 1)`)
               .transition()
               .attr('transform', `scale(1 1)`)
@@ -239,7 +241,7 @@
               .on('end', () => {
                 sinePath
                   .attr('transform', `scale(1 1)`)
-                  .attr('d', line(sine)(range))
+                  .attr('d', line(sineData ?? []))
               })
 
             cosinePath
@@ -248,29 +250,27 @@
               .on('end', () => {
                 cosinePath
                   .attr('transform', `scale(1 1)`)
-                  .attr('d', line(cosine)(range))
+                  .attr('d', line(cosineData ?? []))
               })
           }
 
           sineTransformPath
-            .attr('visibility', showSine ? 'visible' : 'hidden')
-            .attr('fill', color(Math.abs(result[0])))
-            .transition()
-            .attr('d', area(sineTransform)(range))
-
-          cosineTransformPath
-            .attr('visibility', showCosine ? 'visible' : 'hidden')
+            .attr('visibility', sineTransformData ? 'visible' : 'hidden')
             .attr('fill', color(Math.abs(result[1])))
             .transition()
-            .attr('d', area(cosineTransform)(range))
+            .attr('d', area(sineTransformData ?? []))
 
-          if (showCosine && !showSine) {
+          cosineTransformPath
+            .attr('visibility', cosineTransformData ? 'visible' : 'hidden')
+            .attr('fill', color(Math.abs(result[0])))
+            .transition()
+            .attr('d', area(cosineTransformData ?? []))
+
+          if (cosineData && !sineData) {
             cosineTransformPath.attr('transform', `translate(${marginLeft}, 180)`)
           }
 
           prevFreq = frequency
-
-          return result
         }
       }
     }
@@ -739,7 +739,11 @@
 </pre>
 
 <script>(() => {
-  const plot = createSignalPlot({domain: [0, 1], step: 0.01, single: true})
+  const domain = [0, 1]
+  const step = 0.01
+  const range = d3.range(domain[0], domain[1]+step, step)
+
+  const plot = createSignalPlot({single: true})
   document.querySelector('#example-1').appendChild(plot.svg.node())
 
   const inputFreq = document.getElementById('example-1-control')
@@ -752,11 +756,24 @@
     const frequency = Number(inputFreq.value)
     const amplitude = Number(inputAmp.value)
     const targetSignal = sinusoid(4, 0, amplitude)
-    const [result, _] = plot.update({
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/2)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
+
+    const targetData = range.map((d) => targetSignal(d))
+    const sineData = range.map((d) => sine(d))
+    const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
+    const result = d3.fsum(sineTransformData)
+
+    plot.update({
       frequency,
-      targetSignal,
-      showSine: true,
+      targetData,
+      sineData,
+      sineTransformData,
+      result: [0, result]
     })
+
     freqLabel.innerText = `${frequency}Hz`
     inputAmpLabel.innerText = amplitude
     resultLabel.innerText = `sine transform magnitude = ${result.toFixed(2)}`
@@ -792,6 +809,9 @@ in this demo the offset has a magnitude of 1. all the other frequencies we are p
   <output id="example-2-result"></output>
 </pre>
 <script>(() => {
+  const domain = [0, 1]
+  const step = 0.01
+  const range = d3.range(domain[0], domain[1]+step, step)
   const targetSignal = sinusoid(4, Math.PI/2)
 
   const plot = createSignalPlot({domain: [0, 1], step: 0.01, single: true})
@@ -804,17 +824,46 @@ in this demo the offset has a magnitude of 1. all the other frequencies we are p
 
   const drawExample = () => {
     const frequency = Number(freqInput.value)
-    const [sineResult, cosineResult] = plot.update({
-      frequency,
-      targetSignal,
-      showSine: typeInput.value === 'sine',
-      showCosine: typeInput.value === 'cosine',
-    })
-    freqLabel.innerText = `${frequency}Hz`
+
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/2)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
+
+    const targetData = range.map((d) => targetSignal(d))
+    const sineData = range.map((d) => sine(d))
+    const cosineData = range.map((d) => cosine(d))
+    const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
+    const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
+    const result = [
+      d3.fsum(cosineTransformData),
+      d3.fsum(sineTransformData),
+    ]
+
     if (typeInput.value === 'sine') {
-      resultLabel.innerText = `sine transform magnitude = ${sineResult.toFixed(2)}`
+      plot.update({
+        frequency,
+        targetData,
+        sineData,
+        sineTransformData,
+        result,
+      })
     } else {
-      resultLabel.innerText = `cosine transform magnitude = ${cosineResult.toFixed(2)}`
+      plot.update({
+        frequency,
+        targetData,
+        cosineData,
+        cosineTransformData,
+        result,
+      })
+    }
+
+    freqLabel.innerText = `${frequency}Hz`
+
+    if (typeInput.value === 'sine') {
+      resultLabel.innerText = `sine transform magnitude = ${result[1].toFixed(2)}`
+    } else {
+      resultLabel.innerText = `cosine transform magnitude = ${result[0].toFixed(2)}`
     }
   }
 
@@ -859,7 +908,11 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
 <pre><output id="example-3-result"></output></pre>
 
 <script>(() => {
+  const domain = [0, 1]
+  const step = 0.01
   const targetSignal = sinusoid(4, Math.PI/4)
+  const range = d3.range(domain[0], domain[1]+step, step)
+
   const freqInput = document.getElementById('example-3-freq-input')
   const freqLabel = document.getElementById('example-3-freq-label')
   const resultLabel = document.getElementById('example-3-result')
@@ -873,17 +926,35 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
   const drawExample = () => {
     const frequency = Number(freqInput.value)
 
-    const [sineResult, cosineResult] = plot.update({
-      targetSignal,
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/2)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
+
+    const targetData = range.map((d) => targetSignal(d))
+    const sineData = range.map((d) => sine(d))
+    const cosineData = range.map((d) => cosine(d))
+    const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
+    const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
+    const result = [
+      d3.fsum(cosineTransformData),
+      d3.fsum(sineTransformData),
+    ]
+
+    plot.update({
+      targetData,
+      sineData,
+      cosineData,
+      sineTransformData,
+      cosineTransformData,
       frequency,
-      showSine: true,
-      showCosine: true,
+      result,
     })
 
-    circle.update(cosineResult, sineResult)
+    circle.update(result[0], result[1])
     freqLabel.innerText = `${frequency}Hz`
-    resultLabel.innerText = `transform = [${sineResult.toFixed(2)}, ${cosineResult.toFixed(2)}] \
-      \nmagnitude = ${magnitude([sineResult, cosineResult]).toFixed(2)}`
+    resultLabel.innerText = `transform = [${result[1].toFixed(2)}, ${result[0].toFixed(2)}] \
+      \nmagnitude = ${magnitude(result).toFixed(2)}`
   }
   d3.select(freqInput).on('input', drawExample)
   drawExample()
@@ -1023,12 +1094,13 @@ document.querySelector('#example-32').appendChild(svg.node())
   let frequency = 0
   const domain = [0, 1]
   const step = 0.01
+  const range = d3.range(domain[0], domain[1]+step, step)
 
   const onBinSelected = (i) => {
     frequency = i
     drawExample()
   }
-  const plot = createSignalPlot({domain, step})
+  const plot = createSignalPlot()
   document.querySelector('#example-4').appendChild(plot.svg.node())
 
   const freqPlot = createFreqBarPlot({domain: [0, 8], onBinSelected})
@@ -1046,28 +1118,36 @@ document.querySelector('#example-32').appendChild(svg.node())
   ]
   const targetSignal = combine(...components)
 
-  const analysis = (frequency) => {
-    const sine = sinusoid(frequency)
-    const cosine = sinusoid(frequency, Math.PI / 2)
-    // naive DFT
-    const complex = [0, 0]
-    for (const [i, t] of d3.range(domain[0], domain[1]+step, step).entries()) {
-      complex[0] += targetSignal(t) * cosine(t),
-      complex[1] -= targetSignal(t) * sine(t)
-    }
-    return magnitude(complex)
-  }
-
   const drawExample = () => {
     const step = Number(stepInput.value)
-    const [sineResult, cosineResult] = plot.update({
-      targetSignal,
+
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/2)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
+
+    const targetData = range.map((d) => targetSignal(d))
+    const sineData = range.map((d) => sine(d))
+    const cosineData = range.map((d) => cosine(d))
+    const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
+    const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
+    const result = [
+      d3.fsum(cosineTransformData),
+      d3.fsum(sineTransformData),
+    ]
+
+    plot.update({
       frequency,
-      showSine: true,
-      showCosine: true,
+      targetData,
+      sineData,
+      cosineData,
+      sineTransformData,
+      cosineTransformData,
+      result,
     })
-    freqPlot.update(analysis, step, frequency)
-    circle.update(cosineResult, sineResult)
+
+    freqPlot.update(analysis(range, targetSignal), step, frequency)
+    circle.update(result[0], result[1])
   }
 
   d3.select(stepInput).on('input', drawExample)
@@ -1098,14 +1178,16 @@ we can also increase the number of bins by creating more granular sinusoid probe
 
 <script>(() => {
   let frequency = 0
+
   const onBinSelected = (i) => {
     frequency = i
     drawExample()
   }
   const domain = [0, 1]
   const step = 0.01
+  const range = d3.range(domain[0], domain[1]+step, step)
 
-  const plot = createSignalPlot({domain, step})
+  const plot = createSignalPlot()
   document.querySelector('#example-5').appendChild(plot.svg.node())
 
   const freqPlot = createFreqBarPlot({domain: [0, 8], step: 1, onBinSelected})
@@ -1118,30 +1200,35 @@ we can also increase the number of bins by creating more granular sinusoid probe
 
   const targetSignal = sinusoid(3.5, Math.PI / 3)
 
-  const analysis = (f) => {
-    const sine = sinusoid(f)
-    const cosine = sinusoid(f, Math.PI / 2)
-    // naive DFT
-    const complex = [0, 0]
-    for (const t of d3.range(domain[0], domain[1]+step, step)) {
-      complex[0] += targetSignal(t) * cosine(t),
-      complex[1] -= targetSignal(t) * sine(t)
-    }
-    return magnitude(complex)
-  }
-
   const drawExample = () => {
     const step = Number(stepInput.value)
 
-    const [sineResult, cosineResult] = plot.update({
-      targetSignal,
-      frequency,
-      showSine: true,
-      showCosine: true,
-    })
-    freqPlot.update(analysis, step, frequency)
+    const sine = sinusoid(frequency)
+    const cosine = sinusoid(frequency, Math.PI/2)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
 
-    circle.update(cosineResult, sineResult)
+    const targetData = range.map((d) => targetSignal(d))
+    const sineData = range.map((d) => sine(d))
+    const cosineData = range.map((d) => cosine(d))
+    const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
+    const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
+    const result = [
+      d3.fsum(cosineTransformData),
+      d3.fsum(sineTransformData),
+    ]
+
+    plot.update({
+      frequency,
+      targetData,
+      sineData,
+      cosineData,
+      sineTransformData,
+      cosineTransformData,
+      result,
+    })
+    freqPlot.update(analysis(range, targetSignal), step, frequency)
+    circle.update(result[0], result[1])
   }
   d3.select(stepInput).on('input', drawExample)
   drawExample()
@@ -1182,7 +1269,6 @@ mention "octopus" like shape of freq. spectrum
 
 
 <script>(() => {
-
   const signal = sinusoid(2.5)
   const step = 0.01
 
@@ -1196,21 +1282,9 @@ mention "octopus" like shape of freq. spectrum
 
   const drawExample = () => {
     const size = Number(sizeInput.value)
-
     const range = d3.range(0, size+step, step)
-    const analysis = (frequency) => {
-      const sine = sinusoid(frequency)
-      const cosine = sinusoid(frequency, Math.PI / 2)
-      // naive DFT
-      const complex = [0, 0]
-      for (const t of range) {
-        complex[0] += signal(t) * cosine(t),
-        complex[1] -= signal(t) * sine(t)
-      }
-      return magnitude(complex)
-    }
     plot.update({domain: [0, size], func: signal})
-    freqPlot.update({func: analysis})
+    freqPlot.update({func: analysis(range, signal)})
   }
 
   d3.select(sizeInput).on('change', drawExample)
