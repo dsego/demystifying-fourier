@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Draft: Demystifying Fourier analysis</title>
+  <title>DRAFT: Demystifying Fourier analysis</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
@@ -677,7 +677,7 @@
 
 <body>
 
-<h1>Draft: Demystifying Fourier analysis</h1>
+<h1>DRAFT: Demystifying Fourier analysis</h1>
 
 <p>
 <pre>
@@ -1257,17 +1257,15 @@ we can also increase the number of bins by creating more granular sinusoid probe
 </select>
 
 <p>
-spillover happens because our sine isn't infinite in time, an infinite sine would give perfect peaks in the spectrum plot.
-but since we are analyzing with a fixed window of time, the sine signal is showing lobes in neighboring frequency bins.
+spillover happens because our sine isn't infinite in time and we are analyzing frequencies that are not all periodic with the fixed window.
+an infinite sine would give perfect peaks in the spectrum plot, but our sine signal is showing lobes in neighboring frequency bins.
 with a finite window we will have many of our probes that are close in frequency give a perceptible match.
 that's because they or the signal don't fit perfectly in the window (aren't periodic with it)
 and have some scrappy fraying parts near each side of the window.
 
-lobes happens because the transforms don't cancel out when they should because they are sliced off at the ends at the wrong place.
-if we had an infinite window of time, all of these fake matches would cancel out and leave a pure spike for the probe that fully
-matches our sinusoid.
-for a perfect spectrum peak we need an infinite window! otherwise we get this "octopus" like shape on the freq. spectrum
-
+lobes happen because the transforms don't cancel out when they should, they are sliced off at the ends at the wrong place.
+if we had an infinite window of time or we tailored the window to be periodic with each measured frequency and the target signal,
+all of this noise would cancel out and leave a pure spike for the probe that fully matches our sinusoid.
 </p>
 
 
@@ -1413,7 +1411,10 @@ Just a convenient math way to write sin/cos in a single math expression.
 The sine/cosine components need to be presented somehow in a single math expression, ergo multiply sin component by the imaginary number,
 because real & imaginary don't mix.
 
-
+<hr>
+<footer>
+  Copyright &copy; Davorin Šego
+</footer>
 
 </body>
 </html>
