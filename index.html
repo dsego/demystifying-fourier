@@ -1295,10 +1295,113 @@ for a perfect spectrum peak we need an infinite window! otherwise we get this "o
 
 })()</script>
 
-<h3>Periodic window & fraying bits</h3>
+<h3>Periodic window & fraying ends</h3>
+
+<pre>
+  - sinewave 2Hz
+  - one sine probe 4Hz
+  - window size moved in increments of π
+  - notice that when the window size is periodic with the sine transform, we get a perfect cancellation since the 4Hz probe should not match the 2Hz wave
+  - we get partial matches when probe sine does not perfectly fit in the window
+</pre>
 
 
+<figure id="example-7" class="example-plot"><!-- interactive demo --></figure>
 
+<div class="range-slider">
+  <label>Time window</label>
+  <input id="example-7-input" type="range" min="1" max="2" value="1" step="0.125"></input>
+  <output id="example-7-label"></output>
+</div>
+
+<pre>
+  <output id="example-7-result"></output>
+</pre>
+
+<script>(() => {
+  const targetSignal = sinusoid(2)
+  const sine = sinusoid(4)
+  const margin = 25
+  const width = 800
+  const height = 250
+  const svg = createSVG(width, height)
+  const g = svg.insert('g')
+    .attr('transform', `translate(0, 30)`)
+
+  const targetPath = g.insert('path')
+    .attr('fill', 'none')
+    .attr('stroke', '#29B6F6')
+    .attr('stroke-width', 2.5)
+
+  const sinePath = svg.insert('g')
+    .attr('transform', `translate(0, 90)`)
+    .insert('path')
+      .attr('fill', 'none')
+      .attr('stroke', '#E91E63')
+      .attr('stroke-width', 1.5)
+      .attr('vector-effect', 'non-scaling-stroke')
+
+  const sineTransformPath = svg.insert('path', 'g')
+    .attr('transform', `translate(0, 180)`)
+    .attr('fill', '#B0BEC5')
+
+  const fragmentPath = svg.insert('path', 'g')
+    .attr('transform', `translate(0, 180)`)
+    .attr('fill', '#FFE0B2')
+
+  const bottomAxis = svg.append('g')
+    .attr('transform', `translate(0, 160)`)
+
+
+  document.querySelector('#example-7').appendChild(svg.node())
+
+  const input = document.getElementById('example-7-input')
+
+  const line = d3.line().curve(d3.curveNatural)
+  const area = d3.area().curve(d3.curveNatural)
+  const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
+  const x = d3.scaleLinear().range([margin, width-margin])
+
+  const axisScale = d3.scaleLinear().range([margin, width-margin])
+
+  const draw = () => {
+    const size = Number(input.value)
+
+    const periods = size / 0.25
+    document.querySelector('#example-7-label').innerText = `${size}s (${periods} periods)`
+
+    const domain = [0, size]
+    const range = d3.range(domain[0], domain[1]+0.01, 0.01)
+
+    const targetData = range.map((d) => [d, targetSignal(d)])
+    const sineData = range.map((d) => [d, sine(d)])
+    const sineTransformData = range.map((d, i) => [d, sineData[i][1] * targetData[i][1]])
+
+    x.domain(domain)
+
+    line.x((d) => x(d[0])).y((d) => y(d[1]))
+    area.x((d) => x(d[0])).y0(y(0)).y1((d) => y(d[1]))
+
+    bottomAxis.call(d3.axisBottom(x).ticks())
+    targetPath.attr('d', line(targetData))
+    sinePath.attr('d', line(sineData))
+    sineTransformPath.attr('d', area(sineTransformData))
+
+    // find non-periodic fragment at the end
+    const fragmentLength = (size % 0.25)
+
+    const fragmentData = d3.range(domain[1] - fragmentLength, domain[1] + 0.01, 0.01)
+      .map((d) => [d, sine(d) * targetSignal(d)])
+    fragmentPath.attr('d', area(fragmentData))
+
+    const result = d3.fsum(sineTransformData.map(d => d[1]))
+    document.querySelector('#example-7-result').innerText = `Result: ${result.toFixed(2)}`
+  }
+  draw()
+
+  d3.select(input).on('input', draw)
+
+})()</script>
 
 <h3>Complex numbers </h3>
 
