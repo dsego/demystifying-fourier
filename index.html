@@ -721,7 +721,7 @@
   the resulting transform is the area<br>
   troughs and peaks cancel out -> when you sum it together you get a high positive result when the probe highly correlates to the signal,
   for non-matching frequencies the result is practically zero (is it zero or tiny and negligible?)
-  <br> also depends on amplitude of the signal we want to analyze
+  <br>the resulting magnitude and also depends on amplitude of the signal we want to analyze
 
  </p>
 
@@ -790,7 +790,7 @@
 
 <h3>Probing and phase</h3>
 
-<p>The signal is still 4Hz but offset by a quarter of a turn (phase π/2) </p>
+<p>next we want want to analyze a signal that is still 4Hz but offset by a quarter of a turn (phase π/2) </p>
 <p> Why can't we match the signal?
 The sine probe is out of phase with the target signal and won't correlate</p>
 
@@ -881,7 +881,7 @@ in this demo the offset has a magnitude of 1. all the other frequencies we are p
 <h3>Probing with sin & cos = Fourier transform</h3>
 
 <p>https://en.wikipedia.org/wiki/Fourier_transform</p>
-<p> Let's try combining the sine & cosine transform in our analysis</p>
+<p> Let's try combining the sine & cosine transform in our analysis of a 4Hz wave ofset by π/4 (half way between a sine and a cosine)</p>
 
 - we are now dealing with two numbers... you can notice both match partially, from this we can construct a complete match, because
 sine waves are periodic and repeat from the beginning every 2π (full turn)... any movement in phase of the sinusoid will reflect in the sine and cosine components
@@ -966,8 +966,8 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
 
 <h3>Phase</h3>
 
-<p>Let's make the frequency set in stone as 4Hz and just look at the phase of the signal.
-<p>Drag the target sine wave left and right. Notice that our sine & cosine probes give a match for any phase in-between</p>
+<p>Let's make the frequencies of both the signal under test and our sin/cos probes set at 4Hz and just look at the phase of the signal.
+<p><b>Drag</b> the target sine wave left and right. Notice that our sine & cosine probes give a match for any phase in-between</p>
 
 <figure id="example-31" class="example-plot example-inset-70 flex-row"><!-- interactive demo --></figure>
 
@@ -1074,16 +1074,14 @@ document.querySelector('#example-32').appendChild(svg.node())
 <h2>Analyzing a complex wave</h2>
 
 
-<pre>
-  Complex signal (2Hz + 4Hz + 7Hz)
-  - frequency graph with bins shows magnitudes for all probed frequencies
-
-  - notice that the 0Hz band for cosine produces an average of the signal
-  - notice that when choosing quarter of Hertz resolution the 3.75Hz frequency bar appears stronger
-    than the 4Hz bar, event though it's a 4Hz component (phase is π)
-
-  - we introduce a frequency plot that shows a bar for each analysis sinusoid /  probe
-</pre>
+Complex signal <code>2Hz + 4Hz + 7Hz</code>
+<ul>
+  <li> frequency graph with bins shows magnitudes for all probed frequencies</li>
+  <li> notice that the 0Hz band for cosine produces an average of the signal</li>
+  <li> we introduce a frequency plot that shows a bar for each analysis sinusoid /  probe</li>
+  <li> notice that when choosing quarter of Hertz resolution there are spillovers between buckets. at 0.25Hz resolution the 3.75Hz frequency bar appears stronger
+  than the 4Hz bar, even though it's a 4Hz component (phase is π)</li>
+</ul>
 
 
 <figure id="example-4" class="example-plot example-grid example-inset-70"><!-- interactive demo --></figure>
@@ -1165,9 +1163,9 @@ document.querySelector('#example-32').appendChild(svg.node())
 <hr />
 
 
-<h3>Spectral leakage</h3>
+<h3>Spectral spillover</h3>
 <p> what happens if we analyze in-between frequencies</p>
-<p> same plots but there is one frequency that's 3.5 Hz with phase π/3</p>
+<p> this time we are analyzing only one frequency that's 3.5 Hz with phase π/3 </p>
 <p> We can see that for non-integer frequencies we get spill over into adjacent buckets.
 we can recognize that the actual peak is somewhere between 4Hz & 5Hz by interpolating.
 we can also increase the number of bins by creating more granular sinusoid probes for analyzing</p>
@@ -1259,15 +1257,16 @@ we can also increase the number of bins by creating more granular sinusoid probe
 </select>
 
 <p>
-leakage happens because our sine isn't infinite in time, an infinite sine would give perfect peaks in the spectrum plot.
+spillover happens because our sine isn't infinite in time, an infinite sine would give perfect peaks in the spectrum plot.
 but since we are analyzing with a fixed window of time, the sine signal is showing lobes in neighboring frequency bins.
-with a finite window we will have many of our close or periodic probes give a weaker match because they or the signal
-don't fit perfectly in the window and have some scrappy parts near each side of the window.
+with a finite window we will have many of our probes that are close in frequency give a perceptible match.
+that's because they or the signal don't fit perfectly in the window (aren't periodic with it)
+and have some scrappy fraying parts near each side of the window.
 
-lobes happens because we the transforms don't cancel out when they should because they are cut off at the ends.
+lobes happens because the transforms don't cancel out when they should because they are sliced off at the ends at the wrong place.
 if we had an infinite window of time, all of these fake matches would cancel out and leave a pure spike for the probe that fully
 matches our sinusoid.
-<b> for perfect spectrum peak we need an infinite window!!!! </b>, otherwise we get this "octopus" like shape on the freq. spectrum
+for a perfect spectrum peak we need an infinite window! otherwise we get this "octopus" like shape on the freq. spectrum
 
 </p>
 
@@ -1296,6 +1295,10 @@ matches our sinusoid.
 
 })()</script>
 
+<h3>Periodic window & fraying bits</h3>
+
+
+
 
 <h3>Complex numbers </h3>
 
@@ -1304,8 +1307,8 @@ matches our sinusoid.
 <code> cost(t) - i &times; sin(t)</code>
 Just a convenient math way to write sin/cos in a single math expression.
 
-The sine/cosine components need to be presented somehow in a single math expression, ergo multiply sin component by the imaginary number
-real & imaginary don't mix.
+The sine/cosine components need to be presented somehow in a single math expression, ergo multiply sin component by the imaginary number,
+because real & imaginary don't mix.
 
 
 
