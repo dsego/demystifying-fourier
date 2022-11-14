@@ -2,7 +2,7 @@
 
 
 
-Read the [full text here](dsego.github.io/demystifying-fourier/)
+Read the [full text here](http://dsego.github.io/demystifying-fourier/)
 
 ---
 
