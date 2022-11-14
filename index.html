@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DRAFT: Demystifying Fourier analysis</title>
+  <title>Demystifying Fourier analysis</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <script>
@@ -694,21 +694,40 @@
 
 <body>
 
-<h1>[DRAFT]: Demystifying Fourier analysis</h1>
+<h1>Demystifying Fourier analysis</h1>
 
-<h2>[TODO] Intro</h2>
-<p>motivation, mechanistic approach, intuition</p>
 
-<p>trying to break down into simple examples and learn from the ground up</p>
+<h4>Intro</h4>
 
-<p>Useful to analyze the frequency spectrum of sound.
+<p>I've started learning about spectrum analysis a long time ago at university,
+  but failed to gain a true insight in how it works under the hood.
+  For me, it was just some magical math formulas I had to memorize and know about.
+  I knew the theory but it didn't really <q>click</q>.
+</p>
+<p>
+  A few years ago I wanted to do some audio programming and play around with analyzing sound. That's
+  how I started getting interested into building an intuition on how the Fourier transform <q>actually</q> works.
+</p>
+<p>I made these interactive examples mostly to improve my own understanding and maybe help someone else whose mind works in a similar way.
+  I am following a mechanistic approach and building from the ground up, rather than introducing the formula and saying <cite><q>this is what it means.</q></cite>
+  This is easier to wrap my mind around than some <i>abstract math</i>.
+</p>
+<p>
+  My language and math are very simplified, and probably a bit imprecise or not completely correct. I am also not including
+  explanations for everything, like trigonometry functions etc, because that's out of scope.
+</p>
+<p>Feel free to submit any corrections or feedback in the <a href="https://github.com/dsego/demystifying-fourier">github repo</a>.
+</p>
+
+
+<h4>Sound</h4>
 
 <p> Sound comprises of oscillations or repeating patterns in pressure that propagate in a medium.
   Sound waves typically have complex patterns repeating at different frequencies.
   We can typically reconstruct any complex wave form from other periodic waves.
 </p>
 <p>Sinusoidal waves are a good choice for this because they have nice mathematical properties.
-Sound waves are not made out of sines as real-word phenomena. </p>
+That is, sound waves are not made out of sines as real-word phenomena. </p>
 
 <p>To quote one reddit comment:</p>
 
@@ -719,7 +738,7 @@ Sound waves are not made out of sines as real-word phenomena. </p>
     <cite>~RickRussellTX</cite>
 </blockquote>
 
-<p>They also represent up-and-down motion of pistons on a crankshaft:</p>
+<p>Sine waves also represent up-and-down motion of pistons on a crankshaft:</p>
 <blockquote cite="https://www.reddit.com/r/askscience/comments/huxkb/comment/c1yobfr/?utm_source=share&utm_medium=web2x&context=3">
   <q>I suspect that the obsession with sine waves comes from the fact that in
   our daily machine-driven lives we have an awful lot of machines that rotate around an axis,
@@ -732,22 +751,27 @@ Sound waves are not made out of sines as real-word phenomena. </p>
 
 
 
-<h2><q>Probing</q> with a single sine wave</h2>
+<h4><q>Probing</q> with a single sine wave</h4>
 
 <p style="margin-top: 2rem; text-align: center;">
   <img src="https://i.imgflip.com/gkh5g.jpg" alt="Let the probing... Begin!"/>
 </p>
 
-<p>We start from a relatively straightforward approach of <q><i>probing</i></q> or analyzing the target signal by
+<p>
+  We start from a relatively straightforward approach of <q><i>probing</i></q> or analyzing the target signal by
   doing a <a href="https://en.wikipedia.org/wiki/Sine_and_cosine_transforms"><i>sine transform</i></a>
-as originally done by Fourier himself.</p>
+  as originally done by Fourier himself. I'm using the term <q>probe</q> here, I've read it somewhere else already and it feels appropriate,
+  but these are usually called <q>analyzing functions.</q>
+</p>
 <p>The idea is to multiply the signal with a pure sine wave.
   The resulting transform is the area, which can tell us how closely the signal matches our test sine wave.
 </p>
 
-<p>$$\mathit{transform} = \mathit{area}(\ \mathit{target\ signal} \times \mathit{probe}\ )$$</p>
+<p>Here is a simplified formula for this idea:
+$$\mathit{transform} = \mathit{area}(\ \mathit{target\ signal} \times \mathit{probe}\ )$$</p>
 
-<p>Here is our sine transform that analyzes the presence of frequency <i>s</i> in the target signal:</p>
+<p>For completeness sake, let's also include the math for our
+ sine transform that analyzes the presence of frequency <i>s</i> in the target signal:</p>
 
 $$F_{s} = \int_{-\infty}^\infty f(t) \times \sin(2πst) dt$$
 
@@ -832,7 +856,7 @@ $$F_{s} = \int_{-\infty}^\infty f(t) \times \sin(2πst) dt$$
 
 
 
-<h3>Probing and phase</h3>
+<h4>Probing and phase</h4>
 <figure id="example-2" class="example-plot example-inset-70"><!-- interactive demo --></figure>
 
 <div class="range-slider">
@@ -925,7 +949,7 @@ The transform for our 0Hz probe is also a replica of the original wave! This did
 </p>
 
 
-<h3><q>Probing</q> with sine and cosine</h3>
+<h4><q>Probing</q> with sine and cosine</h4>
 
 <p> Let's try combining the sine & cosine transforms in our analysis of a
   4Hz wave ofset by π/4 (half way between a sine and a cosine). This is the famous <a href="https://en.wikipedia.org/wiki/Fourier_transform"><q>Fourier transform</q></a>.
@@ -942,7 +966,7 @@ sinusoids (apart by π/2) would just be the negatives of our sine/cosine probes.
 
 
 
-<h5>Sine/cosine probes and their negatives</h4>
+<h4>Sine/cosine probes and their negatives</h4>
 <p>
   <figure id="example-sincos" class="example-plot">
   <!-- interactive demo -->
@@ -1068,7 +1092,7 @@ document.querySelector('#example-sincos').appendChild(svg.node())
   drawExample()
 })()</script>
 
-<h3>Exploring phase</h3>
+<h4>Exploring phase</h4>
 
 <p>Let's make the frequencies of both the signal under test and our sine/cosine probes set at 4Hz and just look at the phase of the signal.
 <p><b>Drag</b> the target sine wave left and right. Notice that our sine & cosine probes give a match for any phase in-between.</p>
@@ -1127,7 +1151,7 @@ document.querySelector('#example-sincos').appendChild(svg.node())
 
 
 
-<h2>Analyzing a complex wave</h2>
+<h4>Analyzing a complex wave</h4>
 
 Let's analyze a more complex signal which consists of <b>2Hz</b>, <b>4Hz</b> & <b>7Hz</b> component.
 <ul>
@@ -1219,7 +1243,7 @@ Let's analyze a more complex signal which consists of <b>2Hz</b>, <b>4Hz</b> & <
 <hr />
 
 
-<h3>Spectral spillover</h3>
+<h4>Spectral spillover</h4>
 
 <p> What happens if we analyze frequencies that are not whole numbers, but somewhere in-between?</p>
 <p>Let's say this time we are analyzing a frequency of <b>3.5Hz</b> with phase π/3.
@@ -1300,7 +1324,7 @@ Let's analyze a more complex signal which consists of <b>2Hz</b>, <b>4Hz</b> & <
 
 
 
-<h3>The sinc function & spectral resolution</h3>
+<h4>The sinc function & spectral resolution</h4>
 
 <p>
 This <i>spilling over</i> happens because our sine isn't infinite in time and we are analyzing
