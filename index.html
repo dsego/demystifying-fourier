@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DRAFT: Demystifying Fourier analysis</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    MathJax = {options:{skipHtmlTags:[]}}
+  </script>
   <link rel="stylesheet" href="https://fonts.xz.style/serve/inter.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@exampledev/new.css@1.1.2/new.min.css">
   <style>
@@ -96,6 +100,19 @@
       display: flex;
       justify-content: space-around;
       align-items: center;
+    }
+
+    output {
+      min-width: 50px;
+      line-height: 20px;
+      text-align: center;
+      border-radius: 4px;
+      background: #F6F8FA;
+      padding: 5px 8px;
+      border: 1px solid #E5E7EB;
+      border-bottom: 3px solid #E5E7EB;
+      font-size: 0.9rem;
+      font-family: var(--nc-font-sans);
     }
 
   </style>
@@ -677,58 +694,68 @@
 
 <body>
 
-<h1>DRAFT: Demystifying Fourier analysis</h1>
+<h1>[DRAFT]: Demystifying Fourier analysis</h1>
 
-<p>
-<pre>
+<h2>[TODO] Intro</h2>
+<p>motivation, mechanistic approach, intuition</p>
 
-  * sound - repeating patterns in pressure. oscillations propagated in a medium -> waveform
-    - beats - interference pattern between two frequencies
+<p>trying to break down into simple examples and learn from the ground up</p>
 
-  * decompose complex waveform into sinusoids
-    - we can reconstruct any waveform from other periodic waves (summation of sine signals)
-    - sinusoids are a good choice because they have nice mathematical properties (they also represent up-and-down motion of pistons on a crankshaft)
-    - cannot correctly reproduce discontinuous signals (but good enough when band limited?)
-    - sines have no special connection to real-word phenomena -> sound waves are not made out of sines as a real-world phenomena!
+<p>Useful to analyze the frequency spectrum of sound.
 
-    - sine waves periodic and repeat from the beginning every one turn around the circle, 360° or 2π radians
-
-  * Fourier formula
-  * DFT formula
-
-
-  - mechanistic mind
-</pre>
+<p> Sound comprises of oscillations or repeating patterns in pressure that propagate in a medium.
+  Sound waves typically have complex patterns repeating at different frequencies.
+  We can typically reconstruct any complex wave form from other periodic waves.
 </p>
+<p>Sinusoidal waves are a good choice for this because they have nice mathematical properties.
+Sound waves are not made out of sines as real-word phenomena. </p>
+
+<p>To quote one reddit comment:</p>
+
+<blockquote cite="https://www.reddit.com/r/askscience/comments/huxkb/comment/c1ynlgj/?utm_source=share&utm_medium=web2x&context=3">
+  <q>The only things "perfect" about a sine wave are its mathematical conveniences,
+    it has no special connection to real-world phenomena.
+    You could model those phenomena with equal precision with other waveforms.</q>
+    <cite>~RickRussellTX</cite>
+</blockquote>
+
+<p>They also represent up-and-down motion of pistons on a crankshaft:</p>
+<blockquote cite="https://www.reddit.com/r/askscience/comments/huxkb/comment/c1yobfr/?utm_source=share&utm_medium=web2x&context=3">
+  <q>I suspect that the obsession with sine waves comes from the fact that in
+  our daily machine-driven lives we have an awful lot of machines that rotate around an axis,
+  or are attached to crankshafts and what-have you.
+  A piston on a crankshaft produces "pure" sinusoidal up-and-down motion when operating at constant angular velocity.</q>
+  <cite>~RickRussellTX</cite>
+</blockquote>
+
+<p>Sinusoids in fact cannot correctly reproduce discontinuous signals, but they are good enough for band-limited signals.</p>
 
 
 
-<h2>Probing with a single sinewave - fixed phase </h2>
+<h2><q>Probing</q> with a single sine wave</h2>
 
-<p style="text-align: center;">
+<p style="margin-top: 2rem; text-align: center;">
   <img src="https://i.imgflip.com/gkh5g.jpg" alt="Let the probing... Begin!"/>
 </p>
 
-<p>probing with a single sinewave with fixed phase, we won't slide it left or right, just change the frequency</p>
-<p> https://en.wikipedia.org/wiki/Sine_and_cosine_transforms </p>
-<p>the idea is to multiply the signal with a pure sinewave, this basically tells us how closely the signal matches our test sinewave</p>
-<p><code> transform = probe &times; target signal </code></p>
-<p><code> f(t) * sin(2πft) dt </code></p>
+<p>We start from a relatively straightforward approach of <q><i>probing</i></q> or analyzing the target signal by
+  doing a <a href="https://en.wikipedia.org/wiki/Sine_and_cosine_transforms"><i>sine transform</i></a>
+as originally done by Fourier himself.</p>
+<p>The idea is to multiply the signal with a pure sine wave.
+  The resulting transform is the area, which can tell us how closely the signal matches our test sine wave.
+</p>
 
-<p>example 4Hz sinewave</p>
+<p>$$\mathit{transform} = \mathit{area}(\ \mathit{target\ signal} \times \mathit{probe}\ )$$</p>
 
-<p>
-  the resulting transform is the area<br>
-  when you sum it together you get a high positive result when the probe highly correlates to the signal,
-  for non-matching frequencies the result is zero because troughs and peaks cancel out
-  <br>the resulting magnitude and also depends on amplitude of the signal we want to analyze
+<p>Here is our sine transform that analyzes the presence of frequency <i>s</i> in the target signal:</p>
 
- </p>
+$$F_{s} = \int_{-\infty}^\infty f(t) \times \sin(2πst) dt$$
+
 
 <figure id="example-1" class="example-plot example-inset-70"><!-- interactive demo --></figure>
 
 <div class="range-slider">
-  <label style="width:250px">Sine frequency</label>
+  <label style="width:250px">Probe frequency</label>
   <input id="example-1-control" type="range" value=0 min=0 max=8 step=1>
   <output id="example-1-freq"></output>
 </div>
@@ -738,9 +765,9 @@
   <input id="example-1-amplitude" type="range" value=1 min=0 max=2 step=0.2 />
   <output id="example-1-amplitude-label"></output>
 </div>
-<pre>
+<p>
   <output id="example-1-result"></output>
-</pre>
+</p>
 
 <script>(() => {
   const domain = [0, 1]
@@ -780,25 +807,32 @@
 
     freqLabel.innerText = `${frequency}Hz`
     inputAmpLabel.innerText = amplitude
-    resultLabel.innerText = `sine transform magnitude = ${result.toFixed(2)}`
+    resultLabel.innerText = `Magnitude = ${result.toFixed(2)}`
   }
   d3.selectAll([inputFreq, inputAmp]).on('input', drawExample)
   drawExample()
 
 })()</script>
 
-
-<h3>Probing and phase</h3>
-
-<p>next we want want to analyze a signal that is still 4Hz but offset by a quarter of a turn (phase π/2) </p>
-<p> Why can't we match the signal?
-The sine probe is out of phase with the target signal and won't correlate</p>
-
-<p> Let's try moving  our sinewave back also by a quarter of a turn, this now gets us a cosine transform, and it matches
-the target wave perfectly  ...notice we're also getting a DC offset, the transform for 0Hz is a replica of the original wave.
-in this demo the offset has a magnitude of 1. all the other frequencies we are probing for (analysing) have this same offset.
+<p>
+  Our target signal is a <b>4Hz sine wave</b>.
+  We can multiply it by a single sine probe with a fixed phase. This means it won't slide left or right, just change its frequency.
+</p>
+<p> When we aggregate all the values in the transform together, we get a high positive result if the probe correlates with the signal.
+  This number represents the magnitude of the transform. For non-matching frequencies the result is zero because all the peaks and troughs cancel out.
+</p>
+<p>This is all there is to it, the magic trick behind the transform.
+  The total sum of a single sine wave amounts to zero, because there are positive and negative sides.
+  But when we multiply it with a correlating signal, multiplying the negatives will turn them into positive numbers, resulting
+  in a non-zero sum of the transform.
+</p>
+<p>
+  Notice how the resulting magnitude and also depends on amplitude of the signal we want to analyze.
 </p>
 
+
+
+<h3>Probing and phase</h3>
 <figure id="example-2" class="example-plot example-inset-70"><!-- interactive demo --></figure>
 
 <div class="range-slider">
@@ -809,9 +843,10 @@ in this demo the offset has a magnitude of 1. all the other frequencies we are p
   <input id="example-2-freq-input"  type="range" value=0 min=0 max=8 step=1>
   <output id="example-2-freq-label"></output>
 </div>
-<pre>
+<p>
   <output id="example-2-result"></output>
-</pre>
+</p>
+
 <script>(() => {
   const domain = [0, 1]
   const step = 0.01
@@ -865,9 +900,9 @@ in this demo the offset has a magnitude of 1. all the other frequencies we are p
     freqLabel.innerText = `${frequency}Hz`
 
     if (typeInput.value === 'sine') {
-      resultLabel.innerText = `sine transform magnitude = ${result[1].toFixed(2)}`
+      resultLabel.innerText = `Magnitude = ${result[1].toFixed(2)}`
     } else {
-      resultLabel.innerText = `cosine transform magnitude = ${result[0].toFixed(2)}`
+      resultLabel.innerText = `Magnitude = ${result[0].toFixed(2)}`
     }
   }
 
@@ -875,27 +910,94 @@ in this demo the offset has a magnitude of 1. all the other frequencies we are p
   drawExample()
 })()</script>
 
-<br>
-<br>
 
-<h3>Probing with sin & cos = Fourier transform</h3>
-
-<p>https://en.wikipedia.org/wiki/Fourier_transform</p>
-<p> Let's try combining the sine & cosine transform in our analysis of a 4Hz wave ofset by π/4 (half way between a sine and a cosine)</p>
-
-- we are now dealing with two numbers, which we can show on an 2d xy-plot... you can notice both match partially, from this we can construct a complete match, because
-sine waves are periodic and repeat from the beginning every 2π (full turn)... any movement in phase of the sinusoid will reflect in the sine and cosine components
-
-- we don't need any more sinusoids to cover the rest of the quadrants, since the next two sinusoids (apart by π/2) would just be the negatives of our sin/cos probes
-
-
-
-<br><code> sin(π) = -sin(0) &  cos(3π/4) = -cos(0)</code>
-
-<p> from the ratio of our sine and cosine matches we can figure out the actual phase and magnitude (as if we were using a sinusoid of that phase).
-<p> magnitude is just the length of the diagonal line, which is equal to <code>sqrt(sin<sup>2</sup> + cos<sup>2</sup>) </code></p>
-
+<p>Let's try to analyze a signal that is still <b>4Hz</b> but offset by a quarter of a turn (phase is <b>π/2</b>)
 </p>
+<p> Why can't we match the signal?</p>
+<p>The sine probe is out of phase with the target signal and won't correlate.
+Sinusoidal waves are periodic and repeat from the beginning every one turn around the circle, 360° or 2π radians.
+When the phase of our probe doesn't match the phase of the target wave, we won't get a match.
+</p>
+
+<p> Let's turn our probe into a <i>cosine</i> wave. This will bring it back by a quarter of a turn to match the signal perfectly.
+<p>Notice how we're also getting a so-called <cite>DC offset</cite> of magnitude 1 for all the frequencies that we are analyzing.
+The transform for our 0Hz probe is also a replica of the original wave! This didn't happen with our <i>sine</i> transform.
+</p>
+
+
+<h3><q>Probing</q> with sine and cosine</h3>
+
+<p> Let's try combining the sine & cosine transforms in our analysis of a
+  4Hz wave ofset by π/4 (half way between a sine and a cosine). This is the famous <a href="https://en.wikipedia.org/wiki/Fourier_transform"><q>Fourier transform</q></a>.
+  We are now dealing with two numbers, which we can show on an 2d <i>xy-plot</i>.
+
+  When we pick the 4Hz analysis wave, we can notice how both match partially. From this we can construct a complete match.
+  Because sinusoid waves are periodic and repeat from the beginning every 2π (full turn),
+  any movement in phase of the target wave will reflect in the sine and cosine components of our transform.
+</p>
+<p>We don't need any more <i>probes</i> to cover the rest of the quadrants, since the next two
+sinusoids (apart by π/2) would just be the negatives of our sine/cosine probes. </p>
+
+<p>$$\sin(π) = {-\sin(0)}, \ \  \cos(3π/4) = {-\cos(0)}$$</p>
+
+
+
+<h5>Sine/cosine probes and their negatives</h4>
+<p>
+  <figure id="example-sincos" class="example-plot">
+  <!-- interactive demo -->
+  </figure>
+</p>
+<script>(() => {
+
+const height = 150
+const width = 800
+const domain = [0, 1]
+const step = 0.01
+const frequency = 1
+const svg = createSVG(width, height)
+const range = d3.range(domain[0], domain[1]+step, step)
+const x = d3.scaleLinear().domain(domain).range([30, width-30])
+const y = d3.scaleLinear().domain([1, -1]).range([10, height-10])
+
+const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#F06292')
+  .attr('stroke-width', 2)
+  .attr('d', line(sinusoid(frequency))(range))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#64B5F6')
+  .attr('stroke-width', 2)
+  .attr('d', line(sinusoid(frequency, Math.PI/2))(range))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#64B5F6')
+  .attr('stroke-width', 2)
+  .attr('stroke-dasharray', '2 2')
+  .attr('d', line(sinusoid(frequency, 1.5*Math.PI))(range))
+
+svg.insert('path', 'g')
+  .attr('fill', 'none')
+  .attr('stroke', '#F06292')
+  .attr('stroke-width', 2)
+  .attr('stroke-dasharray', '2 2')
+  .attr('d', line(sinusoid(frequency, Math.PI))(range))
+
+
+document.querySelector('#example-sincos').appendChild(svg.node())
+})()</script>
+
+
+<p>From the ratio of our sine and cosine matches we can figure out the actual phase and magnitude (as if we were using a sinusoid of that phase).
+<p>The magnitude becomes the length of the diagonal line, which is equal to: $$\sqrt{{sin}^2 + {cos}^2}$$ </p>
+
+
+
 
 
 <figure id="example-3-signal-plot" class="example-plot example-inset-70"><!-- interactive demo --></figure>
@@ -909,7 +1011,10 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
   </div>
   <figure id="example-3-xy-plot"><!-- interactive demo --></figure>
 </div>
-<pre><output id="example-3-result"></output></pre>
+<p>
+  <output id="example-3-result"></output>
+</p>
+
 
 <script>(() => {
   const domain = [0, 1]
@@ -957,17 +1062,16 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
 
     circle.update(result[0], result[1])
     freqLabel.innerText = `${frequency}Hz`
-    resultLabel.innerText = `transform = [${result[1].toFixed(2)}, ${result[0].toFixed(2)}] \
-      \nmagnitude = ${magnitude(result).toFixed(2)}`
+    resultLabel.innerText = `Transform = [${result[1].toFixed(2)}, ${result[0].toFixed(2)}], magnitude = ${magnitude(result).toFixed(2)}`
   }
   d3.select(freqInput).on('input', drawExample)
   drawExample()
 })()</script>
 
-<h3>Phase</h3>
+<h3>Exploring phase</h3>
 
-<p>Let's make the frequencies of both the signal under test and our sin/cos probes set at 4Hz and just look at the phase of the signal.
-<p><b>Drag</b> the target sine wave left and right. Notice that our sine & cosine probes give a match for any phase in-between</p>
+<p>Let's make the frequencies of both the signal under test and our sine/cosine probes set at 4Hz and just look at the phase of the signal.
+<p><b>Drag</b> the target sine wave left and right. Notice that our sine & cosine probes give a match for any phase in-between.</p>
 
 <figure id="example-31" class="example-plot example-inset-70 flex-row"><!-- interactive demo --></figure>
 
@@ -1022,65 +1126,17 @@ sine waves are periodic and repeat from the beginning every 2π (full turn)... a
 })()</script>
 
 
-<h3>Sin/cos probes and their negatives</h3>
-
-<figure id="example-32" class="example-plot"><!-- interactive demo --></figure>
-
-<script>(() => {
-
-const height = 150
-const width = 800
-const domain = [0, 1]
-const step = 0.01
-const frequency = 1
-const svg = createSVG(width, height)
-const range = d3.range(domain[0], domain[1]+step, step)
-const x = d3.scaleLinear().domain(domain).range([30, width-30])
-const y = d3.scaleLinear().domain([1, -1]).range([10, height-10])
-
-const line = (func) => d3.line().curve(d3.curveNatural).x(x).y((t) => y(func(t)))
-
-svg.insert('path', 'g')
-  .attr('fill', 'none')
-  .attr('stroke', '#F06292')
-  .attr('stroke-width', 2)
-  .attr('d', line(sinusoid(frequency))(range))
-
-svg.insert('path', 'g')
-  .attr('fill', 'none')
-  .attr('stroke', '#64B5F6')
-  .attr('stroke-width', 2)
-  .attr('d', line(sinusoid(frequency, Math.PI/2))(range))
-
-svg.insert('path', 'g')
-  .attr('fill', 'none')
-  .attr('stroke', '#64B5F6')
-  .attr('stroke-width', 2)
-  .attr('stroke-dasharray', '2 2')
-  .attr('d', line(sinusoid(frequency, 1.5*Math.PI))(range))
-
-svg.insert('path', 'g')
-  .attr('fill', 'none')
-  .attr('stroke', '#F06292')
-  .attr('stroke-width', 2)
-  .attr('stroke-dasharray', '2 2')
-  .attr('d', line(sinusoid(frequency, Math.PI))(range))
-
-
-document.querySelector('#example-32').appendChild(svg.node())
-})()</script>
-
 
 <h2>Analyzing a complex wave</h2>
 
-
-Complex signal <code>2Hz + 4Hz + 7Hz</code>
+Let's analyze a more complex signal which consists of <b>2Hz</b>, <b>4Hz</b> & <b>7Hz</b> component.
 <ul>
-  <li> frequency graph with bins shows magnitudes for all probed frequencies</li>
-  <li> notice that the 0Hz band for cosine produces an average of the signal</li>
-  <li> we introduce a frequency plot that shows a bar for each analysis sinusoid /  probe</li>
-  <li> notice that when choosing quarter of Hertz resolution there are spillovers between buckets. at 0.25Hz resolution the 3.75Hz frequency bar appears stronger
-  than the 4Hz bar, even though it's a 4Hz component (phase is π)</li>
+  <li>The frequency graph with bins shows magnitudes for all probed frequencies.</li>
+  <li>Notice that the 0Hz band for our cosine transform produces an average of the signal.</li>
+  <li>We introduce a frequency spectrum plot that shows a bar for each analysis probe.</li>
+  <li>Notice that when choosing quarter of Hertz resolution, there are spillovers between buckets.
+    At 0.25Hz resolution the 3.75Hz frequency bar appears stronger than the 4Hz bar, even though it's a 4Hz component (phase is π).
+  </li>
 </ul>
 
 
@@ -1164,11 +1220,13 @@ Complex signal <code>2Hz + 4Hz + 7Hz</code>
 
 
 <h3>Spectral spillover</h3>
-<p> what happens if we analyze in-between frequencies</p>
-<p> this time we are analyzing only one frequency that's 3.5 Hz with phase π/3 </p>
-<p> We can see that for non-integer frequencies we get spill over into adjacent buckets.
-we can recognize that the actual peak is somewhere between 3Hz & 4Hz by interpolating.
-we can also increase the number of bins by creating more granular sinusoid probes for analyzing</p>
+
+<p> What happens if we analyze frequencies that are not whole numbers, but somewhere in-between?</p>
+<p>Let's say this time we are analyzing a frequency of <b>3.5Hz</b> with phase π/3.
+  See how for non-integer frequencies we get some spillover into adjacent buckets.
+  The actual peak is somewhere between 3Hz & 4Hz. We can figure out the actual peak either by interpolating
+  between the bins, or we could increase the number of bins by creating more granular probes for analyzing.
+</p>
 
 <figure id="example-5" class="example-plot example-grid example-inset-70"><!-- interactive demo --></figure>
 
@@ -1242,9 +1300,26 @@ we can also increase the number of bins by creating more granular sinusoid probe
 
 
 
-<h3>Sinc function & spectral resolution</h3>
+<h3>The sinc function & spectral resolution</h3>
 
-<p> <b>2.5Hz</b></p>
+<p>
+This <i>spilling over</i> happens because our sine isn't infinite in time and we are analyzing
+frequencies that are not all periodic with the fixed window.
+<p>
+An infinite sine would give perfect peaks in the spectrum plot, but our sine signal is showing lobes in neighboring frequency bins.
+With a finite window we will have many of our probes that are close in frequency give a perceptible match.
+That's because they or the signal don't fit perfectly in the window (aren't periodic with it)
+and have some scrappy fraying parts near each side of the window.
+</p>
+
+<p>These lobes happen because the transforms don't cancel out when they should, they are sliced off at the ends at the wrong place.
+If we had an infinite window of time or we tailored the window to be periodic with each measured frequency and the target signal,
+all of this noise would cancel out and leave a pure spike for the probe that fully matches our sinusoid.
+</p>
+
+<p>Here is an example of <b>2.5Hz</b> wave and a one second time window.
+  Increasing the time window changes the spectral resolution and we get a more clear spike for the target frequency.
+</p>
 
 <figure id="example-6" class="example-plot example-inset-40"><!-- interactive demo --></figure>
 
@@ -1255,19 +1330,6 @@ we can also increase the number of bins by creating more granular sinusoid probe
   <option value="10">10s</option>
   <option value="30">30s</option>
 </select>
-
-<p>
-spillover happens because our sine isn't infinite in time and we are analyzing frequencies that are not all periodic with the fixed window.
-an infinite sine would give perfect peaks in the spectrum plot, but our sine signal is showing lobes in neighboring frequency bins.
-with a finite window we will have many of our probes that are close in frequency give a perceptible match.
-that's because they or the signal don't fit perfectly in the window (aren't periodic with it)
-and have some scrappy fraying parts near each side of the window.
-
-lobes happen because the transforms don't cancel out when they should, they are sliced off at the ends at the wrong place.
-if we had an infinite window of time or we tailored the window to be periodic with each measured frequency and the target signal,
-all of this noise would cancel out and leave a pure spike for the probe that fully matches our sinusoid.
-</p>
-
 
 <script>(() => {
   const signal = sinusoid(2.5)
@@ -1295,14 +1357,14 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 
 <h3>Periodic window & fraying ends</h3>
 
-<pre>
-  - sinewave 2Hz
-  - one sine probe 4Hz
-  - window size moved in increments of π
-  - notice that when the window size is periodic with the sine transform, we get a perfect cancellation since the 4Hz probe should not match the 2Hz wave
-  - we get partial matches when probe sine does not perfectly fit in the window
-</pre>
-
+<p>We can demonstrate this requirement to have a periodic window of time in the following interactive example.</p>
+<p>
+  There is a 2Hz target sine wave and a 4Hz sine probe. The time window can be increased in increments of 0.125s or half of the probe's period.
+  Notice how when the window size is periodic with the sine transform, we get a perfect cancellation.
+  This is the behavior we want, our 4Hz probe isn't supposed to give a match for the 2Hz target signal.
+  We get partial matches when the probe sine does not perfectly fit in the window (isn't periodic with it).
+</p>
+<p>This is where those lobes and the sinc function come from.</p>
 
 <figure id="example-7" class="example-plot"><!-- interactive demo --></figure>
 
@@ -1401,19 +1463,20 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 
 })()</script>
 
-<h3>Complex numbers </h3>
+<h3>Complex numbers</h3>
+<p>How do complex numbers come into play? </p>
 
-<br>
-
-<code> cost(t) - i &times; sin(t)</code>
-Just a convenient math way to write sin/cos in a single math expression.
-
-The sine/cosine components need to be presented somehow in a single math expression, ergo multiply sin component by the imaginary number,
-because real & imaginary don't mix.
-
+<p>This is a common way to write down the Fourier transform: $$F_s = \int_{-\infty}^\infty \cos(2πst) - i \times \sin(2πst)$$</p>
+<p>Basically, from what I can see, it's just a convenient math way to write sine & cosine components in a single math expression.
+  Multiplying the sine component with the imaginary number separates it from the cosine component, since real & imaginary parts don't mix.
 <hr>
 <footer>
-  Copyright &copy; Davorin Šego
+  <p>Copyright &copy; Davorin Šego</p>
+  <p>
+    <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">
+    <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a>
+    <br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
+  </p>
 </footer>
 
 </body>
