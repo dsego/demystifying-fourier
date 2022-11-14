@@ -1521,7 +1521,7 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 <p>How do complex numbers come into play? </p>
 
 <p>There is a common way to write down the Fourier transform for frequency <i>s</i> that uses complex numbers:
- $$F_s = \int_{-\infty}^\infty f(t)\times\cos(2πst) - i \times f(t)\times \sin(2πst)$$</p>
+ $$F_s = \int_{-\infty}^\infty f(t)\cdot(\cos(2πst) - i \cdot\sin(2πst))dt$$</p>
 
 <p>From my understanding, it's just a convenient way to write sine & cosine components in a single math expression.
   Multiplying the sine transform with the imaginary number separates it from the cosine component,
@@ -1533,7 +1533,7 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
   $$e^ix = \cos{x} + i\sin{x}$$
 
   which gives us this beautiful condensed version:
-  $$F_s = \int_{-\infty}^\infty f(t)\times e^{-i2πst}dt$$
+  $$F_s = \int_{-\infty}^\infty f(t)\cdot e^{-i2πst}dt$$
 </p>
 <hr>
 
