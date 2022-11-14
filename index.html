@@ -1319,6 +1319,7 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 
 <p>Here is an example of <b>2.5Hz</b> wave and a one second time window.
   Increasing the time window changes the spectral resolution and we get a more clear spike for the target frequency.
+  This shape of the frequency spectrum with <q>tentacles</q> spreading out is known as the <b>sinc</b> function.
 </p>
 
 <figure id="example-6" class="example-plot example-inset-40"><!-- interactive demo --></figure>
@@ -1373,10 +1374,10 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
   <input id="example-7-input" type="range" min="1" max="2" value="1" step="0.125"></input>
   <output id="example-7-label"></output>
 </div>
-
-<pre>
+<p>
   <output id="example-7-result"></output>
-</pre>
+</p>
+
 
 <script>(() => {
   const targetSignal = sinusoid(2)
@@ -1466,8 +1467,8 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 <h3>Complex numbers</h3>
 <p>How do complex numbers come into play? </p>
 
-<p>This is a common way to write down the Fourier transform: $$F_s = \int_{-\infty}^\infty \cos(2πst) - i \times \sin(2πst)$$</p>
-<p>Basically, from what I can see, it's just a convenient math way to write sine & cosine components in a single math expression.
+<p>This is a common way to write down the Fourier transform for frequency <i>s</i>: $$F_s = \int_{-\infty}^\infty \cos(2πst) - i \times \sin(2πst)$$</p>
+<p>Basically, it's just a convenient math way to write sine & cosine components in a single math expression.
   Multiplying the sine component with the imaginary number separates it from the cosine component, since real & imaginary parts don't mix.
 <hr>
 <footer>
