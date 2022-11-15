@@ -957,7 +957,8 @@ When the phase of our probe doesn't match the phase of the target wave, we won't
 
 <p> Let's turn our probe into a <i>cosine</i> wave. This will bring it back by a quarter of a turn to match the signal perfectly.
 <p>Notice how we're also getting a so-called <cite>DC offset</cite> of magnitude 1 for all the frequencies that we are analyzing.
-The transform for our 0Hz probe is also a replica of the original wave! This didn't happen with our <i>sine</i> transform.
+The transform for our 0Hz probe is also a replica of the original wave! This is because the <i>cosine</i> function is 1 when the phase is 0.
+The <i>sine</i> starts at 0, so we don't see the same effect.
 </p>
 
 
@@ -1255,14 +1256,14 @@ show the corresponding analysis function and transform (just as selecting the pr
 <hr/>
 <ul>
   <li>The frequency graph with bins shows magnitudes for all probed frequencies.</li>
-  <li>Notice that the 0Hz band for our cosine transform produces an average of the signal.</li>
+  <li>Again, notice that the 0Hz band for our cosine transform produces an average of the signal (which is zero in this case).</li>
   <li>When choosing 1/4 Hertz resolution there is something strange going on.
     We don't get a nice single bar for each of the frequencies.
     Instead, the spectrum spills over into neighboring buckets.
   </li>
   <li>
     At 0.25Hz resolution the 3.75Hz frequency bar appears stronger than the 4Hz bar,
-    even though it's a 4Hz component (the original component has a phase of π).
+    even though it's a 4Hz component (the actual component has a phase of π).
   </li>
 </ul>
 <p>Let's examine these anomalies in our next examples.</p>
@@ -1278,6 +1279,11 @@ show the corresponding analysis function and transform (just as selecting the pr
   See how for non-integer frequencies we don't get a single bar, instead the spectrum is spilling over into adjacent buckets.
   The actual peak is somewhere between 3Hz & 4Hz. We can figure out the actual peak either by interpolating
   between the bins, or we can increase the number of bins by creating more granular probes for analyzing.
+</p>
+<p>
+ What's even stranger is how the spill-over shape doesn't just taper out like a bell curve,
+ instead it oscillates up and down, but dampens as it spreads out,
+ creating shapes known as <cite>lobes</cite>.
 </p>
 
 <figure id="example-5" class="example-plot example-grid example-inset-70"><!-- interactive demo --></figure>
@@ -1356,7 +1362,7 @@ show the corresponding analysis function and transform (just as selecting the pr
 
 <p>
 This <i>spilling over</i> happens because our sine isn't infinite in time and we are analyzing
-frequencies that are not all periodic with the fixed window.
+frequencies that are not all periodic with the fixed time interval.
 <p>
 An infinite sine would give perfect peaks in the spectrum plot, but our sine signal is showing lobes in neighboring frequency bins.
 With a finite window we will have many of our probes that are close in frequency give a perceptible match.
@@ -1364,14 +1370,14 @@ That's because they or the signal don't fit perfectly in the window (aren't peri
 and have some dangling fragments near each side of the window.
 </p>
 
-<p>These lobes happen because the transforms don't cancel out when they should, they are sliced off at the ends at the wrong place.
+<p>In different words, our transforms don't always cancel out when they should, they are sliced off at the ends in the wrong place.
 If we had an infinite window of time or we tailored the window to be periodic with each measured frequency and the target signal,
 all of this noise would cancel out and leave a pure spike for the probe that fully matches our sinusoid.
 </p>
 
 <p>To illustrate the effect, here is an example of <b>2.5Hz</b> wave and a 1-second time window.
-  Increasing the time window changes the spectral resolution and we get a clearer spike for the target frequency.
-  This shape of the frequency spectrum with <q>tentacles</q> spreading out is known as the <b>sinc</b> function.
+  Increasing the time interval changes the spectral resolution and we get a cleaner spike for the target frequency.
+  This shape of the frequency spectrum with <cite>side lobes</cite> spreading out is known as the <b>sinc</b> function (in this case, it's absolute, ie |sinc|).
 </p>
 
 <figure id="example-6" class="example-plot example-inset-40"><!-- interactive demo --></figure>
@@ -1412,20 +1418,29 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 
 <p>We can demonstrate this requirement to have a periodic window of time in the following interactive example.</p>
 <p>
-  There is a 2Hz target sine wave and a 4Hz sine probe. The time window can be increased in increments of 0.125s
+  There is a 2Hz target sine wave and a 4Hz sine probe. The time interval can be increased in increments of 0.125s
   or half of the probe's period.
   Notice how when the window size is periodic with the sine transform, we get a perfect cancellation.
   This is the behavior we want, our 4Hz probe isn't supposed to give a match for the 2Hz target signal.
   We get partial matches when the probe sine does not perfectly fit in the window (isn't periodic with it).
 </p>
-<p>This is where those lobes and the <i>sinc</i> shape come from.</p>
+<p>This is where those lobes and the <i>sinc</i> shape come from.
+Note that for higher frequencies these fragments are smaller and have less effect on the transform,
+causing smaller spectrum lobes.</p>
 
 <figure id="example-7" class="example-plot"><!-- interactive demo --></figure>
 
+
 <div class="range-slider">
-  <label><small>Time window</small></label>
-  <input id="example-7-input" type="range" min="1" max="2" value="1" step="0.125"></input>
-  <output id="example-7-label"></output>
+  <label style="width:120px"><small>Time window</small></label>
+  <input id="example-7-time" type="range" min="1" max="2" value="1" step="0.125"></input>
+  <output id="example-7-time-label"></output>
+</div>
+
+<div class="range-slider">
+  <label style="width:120px"><small>Probe frequency</small></label>
+  <input id="example-7-freq" type="range" min="1" max="8" value="4" step="1"></input>
+  <output id="example-7-freq-label"></output>
 </div>
 <p>
   <output id="example-7-result"></output>
@@ -1434,7 +1449,6 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 
 <script>(() => {
   const targetSignal = sinusoid(2)
-  const sine = sinusoid(4)
   const margin = 25
   const width = 800
   const height = 250
@@ -1469,7 +1483,10 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 
   document.querySelector('#example-7').appendChild(svg.node())
 
-  const input = document.getElementById('example-7-input')
+  const timeInput = document.getElementById('example-7-time')
+  const timeLabel = document.getElementById('example-7-time-label')
+  const freqInput = document.getElementById('example-7-freq')
+  const freqLabel = document.getElementById('example-7-freq-label')
 
   const line = d3.line().curve(d3.curveNatural)
   const area = d3.area().curve(d3.curveNatural)
@@ -1479,10 +1496,14 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
   const axisScale = d3.scaleLinear().range([margin, width-margin])
 
   const draw = () => {
-    const size = Number(input.value)
+    const size = Number(timeInput.value)
+    const freq = Number(freqInput.value)
 
-    const periods = size / 0.25
-    document.querySelector('#example-7-label').innerText = `${size}s (${periods} periods)`
+    const sine = sinusoid(freq)
+
+    const periods = size * freq
+    timeLabel.innerText = `${size}s (${periods} periods)`
+    freqLabel.innerText = `${freq}Hz`
 
     const domain = [0, size]
     const range = d3.range(domain[0], domain[1]+0.01, 0.01)
@@ -1513,7 +1534,7 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
   }
   draw()
 
-  d3.select(input).on('input', draw)
+  d3.selectAll([timeInput, freqInput]).on('input', draw)
 
 })()</script>
 
@@ -1535,6 +1556,8 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
   which gives us this beautiful condensed version:
   $$F_s = \int_{-\infty}^\infty f(t)\cdot e^{-i2πst}dt$$
 </p>
+
+
 <hr>
 
 <footer>
