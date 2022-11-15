@@ -15,7 +15,26 @@
   <style>
 
     h4 {
+      position: relative;
       margin-bottom: .5rem;
+    }
+
+    h4 > :is(a:link, a:hover, a:active, a:visited) {
+      color: unset;
+      text-decoration: none;
+    }
+
+    h4::before {
+      position: absolute;
+      opacity: 0;
+      left: -1rem;
+      content: '§';
+      font-weight: normal;
+      transition: opacity 200ms ease;
+    }
+
+    h4:hover::before {
+      opacity: 0.3;
     }
 
     .example-plot {
@@ -736,7 +755,7 @@
 <h1>Demystifying Fourier analysis</h1>
 
 
-<h4>Intro</h4>
+<h4 id="intro"><a href="#intro">Intro</a></h4>
 
 <p>I've started learning about spectrum analysis a long time ago at university,
   but failed to gain a true insight in how it works under the hood.
@@ -761,7 +780,7 @@
 </p>
 
 
-<h4>Sound</h4>
+<h4 id="sound"><a href="#sound">Sound</a></h4>
 
 <p> Sound comprises of oscillations or repeating patterns in pressure that propagate in a medium.
   Sound waves typically have complex patterns repeating at different frequencies.
@@ -792,7 +811,11 @@ That is, sound waves are not made out of sines as real-word phenomena. </p>
 
 
 
-<h4><q>Probing</q> with a single sine wave</h4>
+<h4 id="probing-with-a-single-sine-wave">
+  <a href="#probing-with-a-single-sine-wave">
+    <q>Probing</q> with a single sine wave
+  </a>
+</h4>
 
 <p style="margin-top: 2rem; text-align: center;">
   <img src="https://i.imgflip.com/gkh5g.jpg" alt="Let the probing... Begin!"/>
@@ -900,7 +923,11 @@ $$F_{s} = \int_{-\infty}^\infty f(t) \times \sin(2πst) dt$$
 
 
 
-<h4>Probing and phase</h4>
+<h4 id="probing-and-phase">
+  <a href="#probing-and-phase">
+    Probing and phase
+  </a>
+</h4>
 
 <p>Let's try to analyze a signal that is still <b>4Hz</b> but offset by a quarter of a turn (phase is <b>π/2</b>).</p>
 <p> Why can't we match the signal?</p>
@@ -996,7 +1023,11 @@ The <i>sine</i> starts at 0, so we don't see the same effect.
 </p>
 
 
-<h4><q>Probing</q> with sine and cosine</h4>
+<h4 id="probing-with-sine-and-cosine">
+  <a href="#probing-with-sine-and-cosine">
+    <q>Probing</q> with sine and cosine
+  </a>
+</h4>
 
 <p> Let's try combining the sine & cosine transforms in our analysis of a
   4Hz wave ofset by π/4 (half way between a sine and a cosine).
@@ -1087,7 +1118,9 @@ The <i>sine</i> starts at 0, so we don't see the same effect.
 
 
 
-<h4>Sine/cosine probes and their negatives</h4>
+<h4 id="sinecosine-probes-and-their-negatives">
+  <a href="#sinecosine-probes-and-their-negatives">Sine/cosine probes and their negatives</a>
+</h4>
 <p>We don't need any more <i>probes</i> to cover the rest of the quadrants, since the next two
 sinusoids (apart by π/2) would just be the negatives of our sine/cosine probes. </p>
 
@@ -1144,7 +1177,9 @@ svg.insert('path', 'g')
 document.querySelector('#example-sincos').appendChild(svg.node())
 })()</script>
 
-<h4>Phase</h4>
+<h4 id="phase">
+  <a href="#phase">Phase</a>
+</h4>
 
 <p>To further drive the point home, let's look at another interactive example.</p>
 <p>Here we make the frequencies of both the signal under test and our sine/cosine probes set at <b>4Hz</b>
@@ -1205,7 +1240,9 @@ document.querySelector('#example-sincos').appendChild(svg.node())
 
 
 
-<h4>Analyzing a complex wave</h4>
+<h4 id="analyzing-a-complex-wave">
+  <a href="#analyzing-a-complex-wave">Analyzing a complex wave</a>
+</h4>
 
 Let's analyze a more complex signal which consists of multiple components, a strong one at 2Hz and two weaker ones at 4Hz & 7Hz.
 The 4Hz component has a phase of π/3 and the 7Hz a phase of π/4.
@@ -1346,7 +1383,9 @@ show the corresponding analysis function and transform (just as selecting the pr
 
 
 
-<h4>Spectral spillover</h4>
+<h4 id="spectral-spillover">
+  <a href="#spectral-spillover">Spectral spillover</a>
+</h4>
 
 <p>
   What happens if we analyze frequencies that are not whole numbers, but somewhere in-between?
@@ -1432,9 +1471,9 @@ show the corresponding analysis function and transform (just as selecting the pr
 })()</script>
 
 
-
-
-<h4>The sinc function & spectral resolution</h4>
+<h4 id="sinc-function-and-spectral-resolution">
+  <a href="#sinc-function-and-spectral-resolution">The sinc function & spectral resolution</a>
+</h4>
 
 <p>
 This <i>spilling over</i> happens because our sine isn't infinite in time and we are analyzing
@@ -1490,7 +1529,9 @@ all of this noise would cancel out and leave a pure spike for the probe that ful
 
 })()</script>
 
-<h4>Periodic window & frayed ends</h4>
+<h4 id="periodic-window-and-frayed-ends">
+  <a href="#periodic-window-and-frayed-ends">Periodic window & frayed ends</a>
+</h4>
 
 <p>We can demonstrate this requirement to have a periodic window of time in the following interactive example.</p>
 <p>
@@ -1614,7 +1655,9 @@ causing smaller spectrum lobes.</p>
 
 })()</script>
 
-<h4>Complex numbers</h4>
+<h4 id="complex-numbers">
+  <a href="#complex-numbers">Complex numbers</a>
+</h4>
 <p>How do complex numbers come into play? </p>
 
 <p>There is a common way to write down the Fourier transform for frequency <i>s</i> that uses complex numbers:
@@ -1633,7 +1676,9 @@ causing smaller spectrum lobes.</p>
   $$F_s = \int_{-\infty}^\infty f(t)\cdot e^{-i2πst}dt$$
 </p>
 
-<h4>Conclusion</h4>
+<h4 id="conclusion">
+  <a href="#conclusion">Conclusion</a>
+</h4>
 
 
 <p>
