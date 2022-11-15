@@ -468,7 +468,7 @@
 
       svg.append('g')
         .attr('transform', `translate(${[0, y(0)]})`)
-        .call(d3.axisBottom(x).ticks(2))
+        .call(d3.axisBottom(x).ticks(2).tickSize(0))
 
       svg.append('text')
         .text('cos')
@@ -480,7 +480,8 @@
 
       svg.append('g')
         .attr('transform', `translate(${[x(0), 0]})`)
-        .call(d3.axisLeft(y).ticks(2))
+        .call(d3.axisLeft(y).ticks(2).tickSize(0))
+
       svg.append('text')
         .text('sin')
         .attr('x', x(0))
