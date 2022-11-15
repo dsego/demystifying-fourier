@@ -156,7 +156,7 @@
 
     const color = d3.scaleQuantize().domain([0, 5]).range(['#B0BEC5', '#FFE0B2'])
 
-    const createSignalPlot = ({single} = {}) => {
+    const createSignalPlot = ({single, onPhaseChange} = {}) => {
       const width = 820
       const height = single ? 250 : 320
       const marginLeft = 70
@@ -165,13 +165,31 @@
 
       const svg = createSVG(width, height)
 
+      const dragScale = d3.scaleLinear().domain([0, 1]).range([0, width-marginLeft])
+
+      let dragPos = [0, 0]
+      const drag = d3.drag()
+        .on('drag', (e) => onPhaseChange(dragScale.invert(e.dx)))
+
       const g = svg.insert('g')
         .attr('transform', `translate(${marginLeft}, 30)`)
+
+      if (onPhaseChange) g.call(drag)
 
       const targetPath = g.insert('path')
         .attr('fill', 'none')
         .attr('stroke', '#29B6F6')
         .attr('stroke-width', 2.5)
+
+      if (onPhaseChange) {
+        g.insert('rect')
+          .attr('cursor', 'ew-resize')
+          .attr('fill', 'transparent')
+          .attr('x', 0)
+          .attr('y', 0)
+          .attr('width', width)
+          .attr('height', 60)
+      }
 
       svg.append('text')
         .attr('class', 'signal-label')
@@ -293,6 +311,22 @@
           }
 
           prevFreq = frequency
+        },
+        updatePhase: ({targetData, sineTransformData, cosineTransformData, result}) => {
+          const x = d3.scaleLinear().domain([0, targetData.length]).range([0, width-marginLeft])
+          const y = d3.scaleLinear().domain([1, -1]).range([0, 50])
+          const line = d3.line().curve(d3.curveNatural).x((d, i) => x(i)).y((d) => y(d))
+          const area = d3.area().curve(d3.curveNatural).x((d, i) => x(i)).y0(y(0)).y1((d) => y(d))
+
+          targetPath.attr('d', line(targetData))
+
+          sineTransformPath
+            .attr('fill', color(Math.abs(result[1])))
+            .attr('d', area(sineTransformData ?? []))
+
+          cosineTransformPath
+            .attr('fill', color(Math.abs(result[0])))
+            .attr('d', area(cosineTransformData ?? []))
         }
       }
     }
@@ -396,7 +430,7 @@
       }
     }
 
-    const createUnitCircle = ({enableTransitions} = {enableTransitions:true}) => {
+    const createUnitCircle = () => {
       const width = 180
       const height = 180
       const svg = createSVG(width, height)
@@ -467,7 +501,7 @@
 
       const arc = d3.arc().innerRadius(0)
 
-      const update = (cos, sin) => {
+      const update = (cos, sin, enableTransitions) => {
         const alreadyDrawn = cosBar.attr('x2')
 
         if (enableTransitions && alreadyDrawn) {
@@ -1136,7 +1170,7 @@ document.querySelector('#example-sincos').appendChild(svg.node())
   const plot = createPhaseDemoPlot({domain, onPhaseChange})
   document.querySelector('#example-31').appendChild(plot.svg.node())
 
-  const circle = createUnitCircle({enableTransitions: false})
+  const circle = createUnitCircle()
   document.querySelector('#example-31').appendChild(circle.svg.node())
 
   const sine = sinusoid(frequency)
@@ -1163,7 +1197,7 @@ document.querySelector('#example-sincos').appendChild(svg.node())
       result
     })
 
-    circle.update(result[0], result[1])
+    circle.update(result[0], result[1], false)
   }
   draw()
 
@@ -1189,16 +1223,44 @@ show the corresponding analysis function and transform (just as selecting the pr
 
 
 <script>(() => {
-  let frequency = 0
   const domain = [0, 1]
   const step = 0.01
   const range = d3.range(domain[0], domain[1]+step, step)
 
+  let frequency = 0
+  let frequencies = [2, 4, 7]
+  let phases = [Math.PI/3, Math.PI, Math.PI/4]
+  let targetSignal = combine(
+    sinusoid(2, phases[0]),
+    sinusoid(4, phases[1], 0.5),
+    sinusoid(7, phases[2], 0.25)
+  )
+
+  let sine, cosine, sineData, cosineData
+
+  const buildProbe = (freq) => {
+    sine = sinusoid(freq)
+    cosine = sinusoid(freq, Math.PI/2)
+    sineData = range.map((d) => sine(d))
+    cosineData = range.map((d) => cosine(d))
+  }
+
   const onBinSelected = (i) => {
     frequency = i
+    buildProbe(i)
     drawExample()
   }
-  const plot = createSignalPlot()
+
+  const onPhaseChange = (delta) => {
+    phases = phases.map((p, i) => p - delta * 2 * frequencies[i] * Math.PI)
+    targetSignal = combine(
+      sinusoid(frequencies[0], phases[0]),
+      sinusoid(frequencies[1], phases[1], 0.5),
+      sinusoid(frequencies[2], phases[2], 0.25)
+    )
+    updatePhase()
+  }
+  const plot = createSignalPlot({onPhaseChange})
   document.querySelector('#example-4').appendChild(plot.svg.node())
 
   const freqPlot = createFreqBarPlot({domain: [0, 8], onBinSelected})
@@ -1209,24 +1271,36 @@ show the corresponding analysis function and transform (just as selecting the pr
 
   const stepInput = document.querySelector('#example-4-step')
 
-  const components = [
-    sinusoid(2, Math.PI/3),
-    sinusoid(4, Math.PI, 0.5),
-    sinusoid(7, Math.PI/4, 0.25)
-  ]
-  const targetSignal = combine(...components)
+
+  const updatePhase = () => {
+    const step = Number(stepInput.value)
+    const sineTransform = (t) => targetSignal(t) * sine(t)
+    const cosineTransform = (t) => targetSignal(t) * cosine(t)
+    const targetData = range.map((d) => targetSignal(d))
+    const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
+    const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
+    const result = [
+      d3.fsum(cosineTransformData),
+      d3.fsum(sineTransformData),
+    ]
+
+    plot.updatePhase({
+      targetData,
+      sineTransformData,
+      cosineTransformData,
+      result,
+    })
+
+    freqPlot.update(analysis(range, targetSignal), step, frequency)
+    circle.update(result[0], result[1])
+  }
 
   const drawExample = () => {
     const step = Number(stepInput.value)
-
-    const sine = sinusoid(frequency)
-    const cosine = sinusoid(frequency, Math.PI/2)
     const sineTransform = (t) => targetSignal(t) * sine(t)
     const cosineTransform = (t) => targetSignal(t) * cosine(t)
-
     const targetData = range.map((d) => targetSignal(d))
-    const sineData = range.map((d) => sine(d))
-    const cosineData = range.map((d) => cosine(d))
+
     const sineTransformData = range.map((d, i) => sineData[i] * targetData[i])
     const cosineTransformData = range.map((d, i) => cosineData[i] * targetData[i])
     const result = [
@@ -1245,10 +1319,11 @@ show the corresponding analysis function and transform (just as selecting the pr
     })
 
     freqPlot.update(analysis(range, targetSignal), step, frequency)
-    circle.update(result[0], result[1])
+    circle.update(result[0], result[1], false)
   }
 
   d3.select(stepInput).on('input', drawExample)
+  buildProbe(0)
   drawExample()
 
 })()</script>
@@ -1265,6 +1340,7 @@ show the corresponding analysis function and transform (just as selecting the pr
     At 0.25Hz resolution the 3.75Hz frequency bar appears stronger than the 4Hz bar,
     even though it's a 4Hz component (the actual component has a phase of π).
   </li>
+  <li>Drag the target signal left or right to change its phase. Notice how this affects the bars in the spectrum plot.
 </ul>
 <p>Let's examine these anomalies in our next examples.</p>
 
