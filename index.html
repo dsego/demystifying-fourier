@@ -1642,7 +1642,7 @@ causing smaller spectrum lobes.</p>
     sineTransformPath.attr('d', area(sineTransformData))
 
     // find non-periodic fragment at the end
-    const fragmentLength = (size % 0.25)
+    const fragmentLength = (size % (1/freq))
 
     const fragmentData = d3.range(domain[1] - fragmentLength, domain[1] + 0.01, 0.01)
       .map((d) => [d, sine(d) * targetSignal(d)])
